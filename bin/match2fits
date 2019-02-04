@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+'''
+Created on Dec 19, 2017
+
+@author: daniel
+'''
+
+import argparse
+import os
+from matchutils.lib.match2fits import multimatch2fits
+
+
+def cmdargs():
+    filename = os.path.basename(__file__)
+    progname = filename.rpartition('.')[0]
+
+    parser = argparse.ArgumentParser(description="""
+{progname} converts MATCH structured files into FITS structured files.
+
+Example:
+
+    {progname} -m '000409_xtetrans_1a_match.dat'
+""".format(progname=progname))
+    parser.add_argument('--match', '-m', type=str, required=True, nargs='+',
+                        help='''path of file(s) to convert''')
+    parser.add_argument('--fits', '-f', type=str, required=False,
+                        help='''path of target FITS file or directory''')
+
+    args = parser.parse_args()
+    argsd = vars(args)
+    return argsd
+
+
+if __name__ == "__main__":
+    args = cmdargs()
+    multimatch2fits(*args['match'], fitspath=args['fits'])

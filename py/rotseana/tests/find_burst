@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+'''
+Created on Jul 22, 2017
+
+@author: Daniel Sela, Arnon Sela
+
+Example parameters:
+    --mindelta 0.1 --minsig 1.0 --minchisq 2.0 --log 00903_1a_astro -f ../../../smu/dat/000906_sky0001_1c_match.datc
+'''
+import logging
+from rotseana.find_burst import find_burst
+from rotseana.tests.mappingcommon import elementtree
+
+logger = logging.getLevelName(__name__)
+
+
+def cmdargs():
+    import argparse
+    import os
+
+    filename = os.path.basename(__file__)
+    progname = filename.rpartition('.')[0]
+
+    parser = argparse.ArgumentParser(description="""
+{progname} finds burst in MATCH structured data.
+
+Example:
+
+    {progname} --mindelta 0.1 --minsig 1.0 --minchisq 2.0  --log name.log -f 000409_xtetrans_1a_match.dat 
+""".format(progname=progname))
+    parser.add_argument('--file', '-f', type=str, dest='match', required=True,
+                        help="""Path to MATCH/FITS data file.""")
+    parser.add_argument('--fits-index', '-i', type=int, required=False, default=1, dest='fits_index',
+                        help="""In case of FITS data file, identifies the extension to read. default: 1.""")
+    parser.add_argument('--mindelta', type=float, default=0.1, required=False,
+                        help="""minimum delta, default: 0.1""")
+    parser.add_argument('--minsig', type=float, default=1.0, required=False,
+                        help="""minimum sigma, default: 1.0""")
+    parser.add_argument('--minchisq', type=float, default=2.0, required=False,
+                        help="""minimum chisg, default: 2.0""")
+    parser.add_argument('--refra', type=float, required=False,
+                        help="""reference rg""")
+    parser.add_argument('--refdec', type=float, required=False,
+                        help="""reference dec""")
+    parser.add_argument('--radius', type=float, required=False,
+                        help="""radius""")
+    parser.add_argument('--objid', nargs='*', type=int, required=False,
+                        help="""specific objids to process""")
+    parser.add_argument('--rotse', type=int, required=False,
+                        help="""forces rotse number; otherwise, try to get from file ext.""")
+    parser.add_argument('--log', type=str, required=False,
+                        help="""Path to log (pdf)""")
+    parser.add_argument('--emask', type=float, required=False,
+                        help="""emask""")
+    parser.add_argument('--rmask', type=float, required=False,
+                        help="""rmask""")
+    parser.add_argument('--recoverable', action="store_true", required=False, default=False, 
+                        help="""run the program with recoverability - save computed object for recovery in later runs""")
+    parser.add_argument('--recover', action="store_true", required=False, default=False,
+                        help="""run the procram in recovery in which saved computed object would be restored instead of recomputed""")
+    parser.add_argument('--recdir', type=str, required=False,
+                        help="""Path to where recovery file are stored.""")
+    parser.add_argument('--verbose', '-v', action="store_true", required=False, default=False,
+                        help="""set verbose""")
+    args = parser.parse_args()
+    argsd = vars(args)
+    return argsd
+
+
+if __name__ == '__main__':
+    var = find_burst(match="/Users/daniel/Desktop/IDL/rotse1/000702_sky0061_1b_match.dat", mindelta=0.1, minsig=1.0, minchisq=2.0)
+    #print(var.dtype)
+    print(var['ptr'])
+    #print(elementtree(var))

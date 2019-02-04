@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+'''
+Created on Jul 18, 2017
+
+@author: Daniel Sela, Arnon Sela
+
+Example parameters:
+
+    -e 3 -c “J235959.455+321233.661” -f../../../smu/dat/000929_sky0001_1d_match.datc
+'''
+
+import os
+
+from vstars.findcoords import findcoords
+
+def findcoord_cmd(*args, **kwargs):
+    coords=findcoords(*args, **kwargs)
+    if kwargs['verbose']: print('Found %d coords' % len(coords))
+    if coords is None: return
+    for coord in coords:
+        if len(coord) > 2:
+            match_file, id_, name = coord
+            short_name=os.path.basename(match_file) 
+            prefix="%s " % short_name
+        else:
+            id_, name = coord
+            prefix=""
+        print("%s%s %s" %(prefix, id_, name))
+
+        
+def cmdargs():
+    import argparse
+    import os
+    
+    filename=os.path.basename(__file__)
+    progname=filename.rpartition('.')[0]
+    
+    parser = argparse.ArgumentParser(description="""
+{progname} extract object ids and of similar j2000 coordinates wthin error.
+
+Example: 
+
+    {progname} -e 10 -c "J110526.404+501802.085" -f 000409_xtetrans_1a_match.dat 
+""".format(progname=progname))
+    parser.add_argument('--coord', '-c', type=str, required=True,
+                        help="""coordinate to lookup; e.g., J123456.64+123456.7""")
+    parser.add_argument('--file', '-f', type=str, nargs="+", required=True,
+                        help="""Path to MATCH or FITS data file.""")
+    parser.add_argument('--error', '-e', type=float, required=False, default=5.0,
+                        help="""+/- error range within to search; e.g., 5.0""")
+    parser.add_argument('--mindelta', type=float, default=0.1, required=False,
+                        help="""minimum delta""")
+    parser.add_argument('--minsig', type=float, default=1.0, required=False,
+                        help="""minimum sigma""")
+    parser.add_argument('--minchisq', type=float, default=2.0, required=False,
+                        help="""minimum chisg""")
+    parser.add_argument('--fits-index', '-i', type=int, required=False, default=1, dest='fits_index',
+                        help="""In case of FITS data file, identifies the extension to read. defaults to 1.""")
+    parser.add_argument('--emask', type=float, required=False,
+                        help="""emask""")
+    parser.add_argument('--rmask', type=float, required=False,
+                        help="""rmask""")
+    #parser.add_argument('--plot', type=str, required=False,
+    #                    help="""Path to plot file (pdf)""")
+    parser.add_argument('--no-filter', action='store_false', required=False, default=True, dest='filter_',
+                        help="""skip filter for good obs.""")
+    parser.add_argument('--verbose', '-v', action='store_true', required=False, default=False,
+                        help="""prints to console.""")
+    args = parser.parse_args() 
+
+    argsd=vars(args)
+    return argsd
+    
+if __name__=='__main__':
+    args=cmdargs()
+    findcoord_cmd(**args)
+    
+    # ../dat/000409_xtetrans_1a_match.dat  ../dat/rphot_match_130801.fit  
+

@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+'''
+Created on Jul 23, 2017
+
+@author: Daniel Sela, Arnon Sela
+
+Example parameters:
+
+    -e 10  --w-ref -c “J242117.88+355328.8” -f ../../../smu/dat/000901_sky0001_1a_match.datc ../../../smu/dat/000901_sky0001_1b_match.datc ../../../smu/dat/000901_sky0001_1c_match.datc ../../../smu/dat/000901_sky0001_1d_match.datc
+'''
+from vstars.findcoords_gd import findcoords_gd
+
+def cmdargs():
+    import argparse
+    import os
+    
+    filename=os.path.basename(__file__)
+    progname=filename.rpartition('.')[0]
+    
+    parser = argparse.ArgumentParser(description="""
+{progname} extract data from a star over multiple nights given the coordinates and an error.
+
+Example: 
+
+    {progname} -e 10  -—w-ref --log name_gd  -c “J111734.010+501526.228” -f ../dat/000409_xtetrans_1a_match.dat ../dat/rphot_match_130802.fit
+""".format(progname=progname))
+    parser.add_argument('--coord', '-c', type=str,required=True,
+                        help="""coordinate to lookup; e.g., J123456.64+123456.7""")
+    parser.add_argument('--file', '-f', type=str, nargs="+", required=True,
+                        help="""Path to MATCH or FITS data file.""")
+    parser.add_argument('--error', '-e', type=float, required=False, default=5.0,
+                        help="""+/- error range within to search; e.g., 5.0""")
+    parser.add_argument('--fits-index', '-i', type=int, required=False, default=1, dest='fits_index',
+                        help="""In case of FITS data file, identifies the extension to read. defaults to 1.""")
+    parser.add_argument('--w-ref', action='store_true', required=False, default=False, dest='with_reference',
+                        help="""Adds file and object id as reference to entries.""")
+    parser.add_argument('--mindelta', type=float, default=0.1, required=False,
+                        help="""minimum delta""")
+    parser.add_argument('--minsig', type=float, default=1.0, required=False,
+                        help="""minimum sigma""")
+    parser.add_argument('--minchisq', type=float, default=2.0, required=False,
+                        help="""minimum chisg""")
+    parser.add_argument('--log', type=str, required=False,
+                        help="""Path to log (txt)""")
+    #parser.add_argument('--plot', action='store_true', required=False, default=False,
+    #                    help="""Create plot""")
+    parser.add_argument('--verbose', '-v', action='store_true', required=False, default=False,
+                        help="""prints to console.""")
+    parser.add_argument('--quiet', '-q', action='store_true', required=False, default=False,
+                        help="""don't print results to console.""")
+    args = parser.parse_args()  
+    
+    # specific option validation:
+    #if args.plot and args.log is None:
+    #    parser.error("--plot requires --log.")
+    if args.quiet and args.log is None:
+        parser.error("if --quiet and no --log, results will not be printed.")
+    
+    argsd=vars(args)
+    return argsd
+    
+if __name__=='__main__':
+    args=cmdargs()
+    findcoords_gd(**args)

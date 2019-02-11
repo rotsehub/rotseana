@@ -8,7 +8,7 @@ Example parameters:
 
     -e 10  --w-ref -c “J242117.88+355328.8” -f ../../../smu/dat/000901_sky0001_1a_match.datc ../../../smu/dat/000901_sky0001_1b_match.datc ../../../smu/dat/000901_sky0001_1c_match.datc ../../../smu/dat/000901_sky0001_1d_match.datc
 '''
-from vstars.matchcoords_gd import matchcoords_gd
+from rotseana.matchcoords_gd import matchcoords_gd
 
 def cmdargs():
     import argparse

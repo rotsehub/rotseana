@@ -9,7 +9,7 @@ Example parameters:
     -e 3 -f ../../../smu/run/all_coords.txt -c "J235959.455+321233.661"
 '''
 
-from vstars.matchcoords import matchcoords
+from rotseana.matchcoords import matchcoords
 
 
 def matchcoords_cmd(*args, **kwargs):

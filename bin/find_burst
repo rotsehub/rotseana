@@ -8,18 +8,18 @@ Example parameters:
     --mindelta 0.1 --minsig 1.0 --minchisq 2.0 --log 00903_1a_astro -f ../../../smu/dat/000906_sky0001_1c_match.datc
 '''
 import logging
-from vstars.find_burst import find_burst
+from rotseana.find_burst import find_burst
 
-logger=logging.getLevelName(__name__)
-      
-                     
+logger = logging.getLevelName(__name__)
+
+
 def cmdargs():
     import argparse
     import os
-    
-    filename=os.path.basename(__file__)
-    progname=filename.rpartition('.')[0]
-    
+
+    filename = os.path.basename(__file__)
+    progname = filename.rpartition('.')[0]
+
     parser = argparse.ArgumentParser(description="""
 {progname} finds burst in MATCH structured data.
 

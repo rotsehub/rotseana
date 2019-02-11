@@ -5,23 +5,24 @@ Created on Jul 18, 2017
 @author: Daniel Sela, Arnon Sela
 
 example parameters:
-    
+
     -f ../../../smu/dat/000901_sky0001_1a_match.datc
 '''
 
-from vstars.getcoords import getcoords
-           
+from rotseana.getcoords import getcoords
+
+
 def cmdargs():
     import argparse
     import os
-    
+
     filename=os.path.basename(__file__)
     progname=filename.rpartition('.')[0]
-    
+
     parser = argparse.ArgumentParser(description="""
 {progname} extract object ids and their j2000 coordinates.
 
-Example: 
+Example:
 
     {progname} -f 000409_xtetrans_1a_match.dat 
 """.format(progname=progname))
@@ -46,10 +47,10 @@ Example:
     args = parser.parse_args()  
     argsd=vars(args)
     return argsd
-    
+
+
 if __name__=='__main__':
     args=cmdargs()
     getcoords(**args)
 
-    
 

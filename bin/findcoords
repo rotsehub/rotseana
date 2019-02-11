@@ -11,7 +11,7 @@ Example parameters:
 
 import os
 
-from vstars.findcoords import findcoords
+from rotseana.findcoords import findcoords
 
 def findcoord_cmd(*args, **kwargs):
     coords=findcoords(*args, **kwargs)

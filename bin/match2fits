@@ -7,7 +7,7 @@ Created on Dec 19, 2017
 
 import argparse
 import os
-from matchutils.lib.match2fits import multimatch2fits
+from rotsedatamodel.match2fits import multimatch2fits
 
 
 def cmdargs():

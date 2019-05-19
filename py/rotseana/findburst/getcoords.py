@@ -6,9 +6,9 @@ Created on Jul 18, 2017
 '''
 
 from rotseutil.make_rotse_name_sixty import make_rotse_name
-from rotseana.read_data_file import read_data_file
-from rotseana.filter_obs import filter_obs
-from rotseana.calc_masks import calc_masks
+from rotseana.findburst.read_data_file import read_data_file
+from rotseana.findburst.filter_obs import filter_obs
+from rotseana.findburst.calc_masks import calc_masks
 import os
 
 

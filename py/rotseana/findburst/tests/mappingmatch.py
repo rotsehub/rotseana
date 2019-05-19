@@ -4,7 +4,7 @@ Created on Nov 5, 2017
 @author: daniel
 '''
 
-import rotseana.tests.mappingcommon as mc
+import rotseana.findburst.tests.mappingcommon as mc
 from scipy.io import readsav
 
 

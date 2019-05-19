@@ -5,7 +5,7 @@ Created on Jul 21, 2017
 '''
 
 import numpy as np
-from rotseana.iter_mean import iter_mean
+from rotseana.findburst.iter_mean import iter_mean
 
 
 def odd_even_indexes(ngd):

@@ -8,7 +8,7 @@ Created on Jul 12, 2017
 Adopted from check_flags.pro IDL procedure
 '''
 
-from rotseana.set_flags import set_flags
+from rotseana.findburst.set_flags import set_flags
 
 
 def check_flags(flagstr, flagword, type_=None):

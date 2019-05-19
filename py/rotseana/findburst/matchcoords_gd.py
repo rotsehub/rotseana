@@ -5,9 +5,9 @@ Created on Jul 23, 2017
 @author: Daniel Sela, Arnon Sela
 '''
 
-from rotseana.matchcoords import matchcoords
-from rotseana.findburst_gd import findburst_gd
-from rotseana.read_data_file import get_data_file_rotse
+from rotseana.findburst.matchcoords import matchcoords
+from rotseana.findburst.findburst_gd import findburst_gd
+from rotseana.findburst.read_data_file import get_data_file_rotse
 
 import itertools
 import matplotlib

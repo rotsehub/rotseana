@@ -6,11 +6,11 @@ Created on Jul 28, 2017
 
 import numpy as np
 
-from rotseana.make_var_struct import make_var_struct
+from rotseana.findburst.make_var_struct import make_var_struct
 from rotseutil.make_rotse_name_sixty import make_rotse_name
 from rotseutil.conv2deg import conv2deg
 from rotseutil.lightcurve import lightcurve
-from rotseana.ivalue import ivalue
+from rotseana.findburst.ivalue import ivalue
 
 
 def calc_var(match, nvar, totobs, goodobj, mindelta, minsig, emask=None, rmask=None, verbose=False):

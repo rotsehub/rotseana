@@ -4,7 +4,7 @@ Created on Jul 24, 2017
 @author: Daniel Sela, Arnon Sela
 '''
 
-from rotseana.set_flags import set_flags
+from rotseana.findburst.set_flags import set_flags
 
 
 def calc_masks(emask, rmask):

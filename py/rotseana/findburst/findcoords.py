@@ -8,13 +8,13 @@ Created on Jul 18, 2017
 import numpy as np
 import re
 
-from rotseana.calc_masks import calc_masks
-from rotseana.calc_var import calc_var
+from rotseana.findburst.calc_masks import calc_masks
+from rotseana.findburst.calc_var import calc_var
 from rotseutil.coords_operations import decim_2_sec
-from rotseana.filter_obs import filter_obs
-from rotseana.lcplot2 import lcplot2
+from rotseana.findburst.filter_obs import filter_obs
+from rotseana.findburst.lcplot2 import lcplot2
 from rotseutil.make_rotse_name_sixty import make_rotse_name
-from rotseana.read_data_file import read_data_file
+from rotseana.findburst.read_data_file import read_data_file
 
 
 # matching "J110526.404+501802.085"

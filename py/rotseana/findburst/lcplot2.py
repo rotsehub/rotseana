@@ -10,7 +10,7 @@ import matplotlib
 matplotlib.use('PDF')
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
-from rotseutil.make_rotse_name_sixty import make_rotse_name
+from rotseutil.findburst_utils.make_rotse_name_sixty import make_rotse_name
 
 this_pdf = None
 this_pdffile = None

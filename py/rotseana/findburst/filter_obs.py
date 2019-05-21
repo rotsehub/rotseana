@@ -1,5 +1,5 @@
 from rotseana.findburst.check_flags import check_flags
-from rotseutil.make_rotse_name_sixty import make_rotse_name
+from rotseutil.findburst_utils.make_rotse_name_sixty import make_rotse_name
 # import math
 # from pprint import pprint
 

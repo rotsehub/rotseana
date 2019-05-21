@@ -7,9 +7,9 @@ Created on Jul 28, 2017
 import numpy as np
 
 from rotseana.findburst.make_var_struct import make_var_struct
-from rotseutil.make_rotse_name_sixty import make_rotse_name
-from rotseutil.conv2deg import conv2deg
-from rotseutil.lightcurve import lightcurve
+from rotseutil.findburst_utils.make_rotse_name_sixty import make_rotse_name
+from rotseutil.findburst_utils.conv2deg import conv2deg
+from rotseutil.findburst_utils.lightcurve import lightcurve
 from rotseana.findburst.ivalue import ivalue
 
 

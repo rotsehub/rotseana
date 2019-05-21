@@ -10,10 +10,10 @@ import re
 
 from rotseana.findburst.calc_masks import calc_masks
 from rotseana.findburst.calc_var import calc_var
-from rotseutil.coords_operations import decim_2_sec
+from rotseutil.findburst_utils.coords_operations import decim_2_sec
 from rotseana.findburst.filter_obs import filter_obs
 from rotseana.findburst.lcplot2 import lcplot2
-from rotseutil.make_rotse_name_sixty import make_rotse_name
+from rotseutil.findburst_utils.make_rotse_name_sixty import make_rotse_name
 from rotseana.findburst.read_data_file import read_data_file
 
 

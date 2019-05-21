@@ -5,7 +5,7 @@ Created on Jul 18, 2017
 @author: Daniel Sela, Arnon Sela
 '''
 
-from rotseutil.make_rotse_name_sixty import make_rotse_name
+from rotseutil.findburst_utils.make_rotse_name_sixty import make_rotse_name
 from rotseana.findburst.read_data_file import read_data_file
 from rotseana.findburst.filter_obs import filter_obs
 from rotseana.findburst.calc_masks import calc_masks

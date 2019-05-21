@@ -3,7 +3,7 @@
 from collections import namedtuple
 import re
 import numpy as np
-from rotseutil.coords_operations import decim_2_sec
+from rotseutil.findburst_utils.coords_operations import decim_2_sec
 
 finder = re.compile(r".*J(?P<x>(\d+\.\d+))(?P<y>([+-]\d+\.\d+))")
 Coord = namedtuple("Coord", ["file", "objid", "jname", "x", "y"])

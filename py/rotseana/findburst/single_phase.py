@@ -5,7 +5,7 @@ Created on Jul 18, 2017
 @author: Daniel Sela, Arnon Sela
 '''
 import numpy as np
-from rotseutil.create_struct import create_struct
+from rotseutil.findburst_utils.create_struct import create_struct
 
 
 def single_phase(datfile, period, max_freq=3.0, lc_dir=None, no_avg=None, per=None):

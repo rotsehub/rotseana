@@ -1,10 +1,10 @@
-AUTHOR: Daniel Sela
+=======
+find_burst utilities
+=======
 
-This is the description of using python version of findburst and coordinates finding tool, developed by me during summer research 2017. It is encouraged to use this tool for some useful and robust variable star search.
-=============================================================================
-WARNING: This is not a complete substitute of the analysis of Variable star search with ROTSE data. But I bet this will save tremendous amount of time finding the same stars over several nights and so on
+WARNING: This is not a complete substitute of the analysis of Variable star search with ROTSE data.
 
-COMMENTS/SUGGESTIONS: danielsela42@gmail.com
+COMMENTS/SUGGESTIONS: kehoe@physics.smu.edu, gdhungana@mail.smu.edu, danielsela42@gmail.com
 
 ACKNOWLEDGEMENT: Arnon Sela, Guvinda Dhungana
 

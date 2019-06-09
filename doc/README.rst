@@ -1,16 +1,14 @@
-AUTHOR: Daniel Sela
+=======
+find_burst utilities
+=======
 
-This is the description of using python version of findburst and coordinates finding tool, developed by me during summer research 2017. It is encouraged to use this tool for some useful and robust variable star search.
-=============================================================================
-WARNING: This is not a complete substitute of the analysis of Variable star search with ROTSE data. But I bet this will save tremendous amount of time finding the same stars over several nights and so on
+WARNING: This is not a complete substitute of the analysis of Variable star search with ROTSE data.
 
-COMMENTS/SUGGESTIONS: danielsela42@gmail.com
+COMMENTS/SUGGESTIONS: kehoe@physics.smu.edu, gdhungana@mail.smu.edu, danielsela42@gmail.com
 
 ACKNOWLEDGEMENT: Arnon Sela, Guvinda Dhungana
 
 Enjoy the cool work!
-
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 .. contents:: Table of Contents
    :depth: 1
@@ -18,8 +16,6 @@ Enjoy the cool work!
 Objective:
 ==========
 At the beginning of the process of finding variable stars, just getting the data from one star can take an hour. After finding the coordinates of a star, one must search through all the nights to find the objid's of the same star. Then, findburst_gd must be run in IDL to extract the stars data from each night. This package attempts to simplify this process.  Some of these programs are similar to the their IDL counterparts, while others are added to shorten this process. Together, these programs can shorten the time it takes to gather the data of a star from an hour to a minute or less.
-
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 Installing for product/development use
 ======================================
@@ -49,7 +45,6 @@ Quick Start: common process:
    Though findcoords_gd will take longer because it has to filter observations and search through the FIT or MATCH file for the coordinates and object id's.
    The output of getcoords can be used as the inputed file.
 
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 Programs:
 =========
 find_burst

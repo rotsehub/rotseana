@@ -27,8 +27,9 @@ Installing for development using bash
 
 1. Activate a virtual environment
 2. Install the packages in REQUIRED
-3. Go to the development directory: cd /path/to/dev_dir
-4. Get the URL for the repository and run: git clone URL
+3. Go to the development directory: :code: cd /path/to/dev_dir
+4. Get the URL for the repository and run: :code: git clone URL
+5. Add the py folders to the python path :code: export PYTHONPATH=/path/to/rotseana/py:/path/to/rotseutil/py:/path/to/rotsedatamodel/py:$PYTHONPATH
 
 Installing for product use with bash
 ====================================

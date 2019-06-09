@@ -126,7 +126,7 @@ Extracts the coordinates from one or more files and prints them to the terminal.
 Parameters
 ----------
 
--f or --file  Processes the specified file.
+-f  (--file) Processes the specified file.
 
 To run
 ------
@@ -175,10 +175,10 @@ Extract the date, magnitude, and magnitude error of a star given the coordinates
 Parameters
 ----------
 
--e             error with with a float value.
---w-ref        adds the objid and the name of the file from which the data was extracted to the text file.
--c or --coord  coordinates with a string "". Do not use any spaces and use a capital "J" at the beginning.
--f or --file   the file(s) that the data will be extracted from.
+-e       error with with a float value.
+--w-ref  adds the objid and the name of the file from which the data was extracted to the text file.
+-c       (--coord) coordinates with a string "". Do not use any spaces and use a capital "J" at the beginning.
+-f       (--file) the file(s) that the data will be extracted from.
 
 To run without reference
 ------------------------
@@ -209,9 +209,9 @@ Extract object ids of similar coordinates in a file within a specified error.
 Parameters
 ----------
 
--e             error with with a float value.
--c or --coord  coordinates with a string "". Do not use any spaces and use a capital "J" at the beginning.
--f or --file   the file(s) that the data will be extracted from.
+-e  error with with a float value.
+-c  (--coord) coordinates with a string "". Do not use any spaces and use a capital "J" at the beginning.
+-f  (--file) the file(s) that the data will be extracted from.
 
 To run
 ------
@@ -235,10 +235,10 @@ Extract the date, magnitude, and magnitude error of a star given the coordinates
 Parameters
 ----------
 
--e             error with with a float value.
---w-ref        adds the objid and the name of the file from which the data was extracted to the text file.
--c or --coord  coordinates with a string "". Do not use any spaces and use a capital "J" at the beginning.
--f or --file   the file(s) that the data will be extracted from.
+-e       error with with a float value.
+--w-ref  adds the objid and the name of the file from which the data was extracted to the text file.
+-c       (--coord) coordinates with a string "". Do not use any spaces and use a capital "J" at the beginning.
+-f       (--file) the file(s) that the data will be extracted from.
 
 To run without reference
 ------------------------

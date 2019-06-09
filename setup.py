@@ -58,7 +58,7 @@ def scripts(bin_path='bin'):
     if os.path.isdir(bindir):
         for file in os.listdir(bindir):
             file = os.path.join(bindir, file)
-            if os.path.isfile(file) and not file.endswith('__init__.py'):
+            if os.path.isfile(file) and not file.endswith('__init__.py') and not file.startswith('.'):
                 scripts += [file]
     return scripts
 

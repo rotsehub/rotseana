@@ -53,13 +53,13 @@ def scripts(bin_path='bin'):
     ''' pull all scripts from package/bin.This is not limited to
     executables, as some scripts are sources.
     '''
-    bindir = os.path.join(os.getcwd(), bin_path)
+    bindir = bin_path  # os.path.join(os.getcwd(), bin_path)
     scripts = []
     if os.path.isdir(bindir):
         for file in os.listdir(bindir):
-            file = os.path.join(bindir, file)
-            if os.path.isfile(file) and not file.endswith('__init__.py') and not file.startswith('.'):
-                scripts += [file]
+            file_path = os.path.join(bindir, file)
+            if os.path.isfile(file_path) and not file_path.endswith('__init__.py') and not file.startswith('.'):
+                scripts += [file_path]
     return scripts
 
 

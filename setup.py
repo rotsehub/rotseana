@@ -103,6 +103,8 @@ if "install" in sys.argv:
 
 scripts = scripts()
 
+print('scripts', scripts)
+
 # Find all sub packages
 # packages = setup_utils.find_sub_packages(PACKAGES)
 packages = PACKAGES

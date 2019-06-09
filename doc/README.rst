@@ -10,7 +10,7 @@ ACKNOWLEDGEMENT: Arnon Sela, Guvinda Dhungana
 
 Enjoy the cool work!
 
-.. contents::
+.. contents:: Table of Contents
     :depth: 2
 
 ----------

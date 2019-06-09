@@ -11,6 +11,7 @@ ACKNOWLEDGEMENT: Arnon Sela, Guvinda Dhungana
 Enjoy the cool work!
 
 .. contents::
+    :depth: 2
 
 ----------
 Objective
@@ -88,13 +89,13 @@ Extracts the date, magnitude, and magnitude error of a star given an object idea
 Parameters
 ----------
 
---match: Works on match structured files (.dat and .datc). Only use when the file you are retrieving the data from is a match structured file.
---fits: Works on FIT files. Only use when the file you are retrieving the data from is a FIT structured file.
---mindelta: Minimum delta
---minsig: Minimum sigma
---minchisq: Minimum chisq
---objid: Processes a specific objid
---log: Saves the output as a .txt.
+--match     Works on match structured files (.dat and .datc). Only use when the file you are retrieving the data from is a match structured file.
+--fits      Works on FIT files. Only use when the file you are retrieving the data from is a FIT structured file.
+--mindelta  Minimum delta
+--minsig    Minimum sigma
+--minchisq  Minimum chisq
+--objid     Processes a specific objid
+--log       Saves the output as a .txt.
 
 To run using a match structured file
 ------------------------------------
@@ -125,7 +126,7 @@ Extracts the coordinates from one or more files and prints them to the terminal.
 Parameters
 ----------
 
--f or --file: Processes the specified file.
+-f or --file  Processes the specified file.
 
 To run
 ------
@@ -149,7 +150,7 @@ Extract object ids of similar coordinates in a file within a specified error. ma
 Parameters
 ----------
 
--e: error with a float value.
+-e  error with a float value.
 
 To run
 ------
@@ -174,10 +175,10 @@ Extract the date, magnitude, and magnitude error of a star given the coordinates
 Parameters
 ----------
 
--e: error with with a float value.
---w-ref: adds the objid and the name of the file from which the data was extracted to the text file.
--c or --coord: coordinates with a string "". Do not use any spaces and use a capital "J" at the beginning.
--f or --file: the file(s) that the data will be extracted from.
+-e             error with with a float value.
+--w-ref        adds the objid and the name of the file from which the data was extracted to the text file.
+-c or --coord  coordinates with a string "". Do not use any spaces and use a capital "J" at the beginning.
+-f or --file   the file(s) that the data will be extracted from.
 
 To run without reference
 ------------------------
@@ -208,9 +209,9 @@ Extract object ids of similar coordinates in a file within a specified error.
 Parameters
 ----------
 
--e: error with with a float value.
--c or --coord: coordinates with a string "". Do not use any spaces and use a capital "J" at the beginning.
--f or --file: the file(s) that the data will be extracted from.
+-e             error with with a float value.
+-c or --coord  coordinates with a string "". Do not use any spaces and use a capital "J" at the beginning.
+-f or --file   the file(s) that the data will be extracted from.
 
 To run
 ------
@@ -234,10 +235,10 @@ Extract the date, magnitude, and magnitude error of a star given the coordinates
 Parameters
 ----------
 
--e: error with with a float value.
---w-ref: adds the objid and the name of the file from which the data was extracted to the text file.
--c or --coord: coordinates with a string "". Do not use any spaces and use a capital "J" at the beginning.
--f or --file: the file(s) that the data will be extracted from.
+-e             error with with a float value.
+--w-ref        adds the objid and the name of the file from which the data was extracted to the text file.
+-c or --coord  coordinates with a string "". Do not use any spaces and use a capital "J" at the beginning.
+-f or --file   the file(s) that the data will be extracted from.
 
 To run without reference
 ------------------------

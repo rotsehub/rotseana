@@ -1,14 +1,13 @@
 ====================
 find_burst utilities
 ====================
+:Author: Daniel Sela
+:Contact: kehoe@physics.smu.edu, gdhungana@mail.smu.edu, danielsela42@gmail.com
+:Acknowledgement: Robert Kehoe, Arnon Sela, Guvinda Dhungana
 
-WARNING: This is not a complete substitute of the analysis of Variable star search with ROTSE data.
+.. WARNING::
 
-COMMENTS/SUGGESTIONS: kehoe@physics.smu.edu, gdhungana@mail.smu.edu, danielsela42@gmail.com
-
-ACKNOWLEDGEMENT: Arnon Sela, Guvinda Dhungana
-
-Enjoy the cool work!
+    This is not a complete substitute of the analysis of Variable star search with ROTSE data.
 
 .. contents:: Table of Contents
     :depth: 2
@@ -126,7 +125,7 @@ Extracts the coordinates from one or more files and prints them to the terminal.
 Parameters
 ----------
 
--f  (--file) Processes the specified file.
+-f, --file  Processes the specified file.
 
 To run
 ------

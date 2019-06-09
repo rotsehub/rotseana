@@ -17,30 +17,38 @@ At the beginning of the process of finding variable stars, just getting the data
 
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-Instruction to use this package:
+Installing for development using bash:
+---------
 
-1. Enter bash: bash
+1. Activate a virtual environment
+2. Install the packages in REQUIRED
+3. Go to the development directory: cd /path/to/dev_dir
+4. Get the URL for the repository and run: git clone URL
+Installing for product use with bash:
+--------
 
-2. Activate the virtual environment: source ~/pyvarstar/.bashrc
+1. Download repository as ZIP through GitHub
 
-3. You can now run a program that is in ~/pyvarstar/vstars from any location.
+2. Activate a virtual environment
+
+3. In command line run: pip install /path/to/git-download
 
 Quick Start: common process:
+--------
 
 1. Use getcoords to create a single file with the coordinates and filtered observations over all the nights.
 
-2. After finding the coordinates of one star though the result of find_burst, use matchcoords_gd to gather the data over all the nights. 
+2. After finding the coordinates of one star though the result of find_burst, use matchcoords_gd to gather the data over all the nights.
    The inputed file can be the output of getcoords.
 
-3. Alternatively, if you do not wish to use getcoords, you can use findcoords_gd to gather the data over all the nights of a single star. 
-   Though findcoords_gd will take longer because it has to filter observations and search through the FIT or MATCH file for the coordinates and object id's. 
+3. Alternatively, if you do not wish to use getcoords, you can use findcoords_gd to gather the data over all the nights of a single star.
+   Though findcoords_gd will take longer because it has to filter observations and search through the FIT or MATCH file for the coordinates and object id's.
    The output of getcoords can be used as the inputed file.
 
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 Programs:
 =========
-
 find_burst
 -----------
 
@@ -56,10 +64,10 @@ To run:
 
     find_burst --mindelta VALUE --minsig VALUE --minchisq VALUE  --log name.log -f FILE
 
-Example: 
+Example:
 
     find_burst --mindelta 0.1 --minsig 1.0 --minchisq 2.0 --log sky1.pdf -f ../000906_sky0001_1c_match.datc
-    
+
 For more information run find_burst -h (or --help)
 
 findburst_gd
@@ -119,10 +127,10 @@ To run:
     matchoords -e ERRORVALUE -f FILE -c "COORDINATES"
 
 Example:
-    
+
     getcoords -f 000409*_match.dat > all_coords.txt
     matchoords -e 10 -f all_coords.txt -c "J110526.404+501802.085"
-    
+
 matchcoords_gd
 ---------
 
@@ -200,7 +208,7 @@ pyvarstar/
 |-- README
 |-- vstars -> versions/vstars_20170804/ : link to active version
 |-- versions/ : keep versions for qiuck fallback
-|   |-- vstars_20170804/ 
+|   |-- vstars_20170804/
 |   |   |-- lib/
 |   |   |   |-- vstars/ : python programs
 |   |   |-- bin/ : pyhton executables

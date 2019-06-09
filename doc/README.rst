@@ -3,7 +3,7 @@ find_burst utilities
 ====================
 :Author: Daniel Sela
 :Contact: kehoe@physics.smu.edu, gdhungana@mail.smu.edu, danielsela42@gmail.com
-:Acknowledgement: Robert Kehoe, Arnon Sela, Guvinda Dhungana
+:Acknowledgement: Robert Kehoe, Govinda Dhungana, Arnon Sela
 
 
 **WARNING**

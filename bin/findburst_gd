@@ -7,7 +7,7 @@ Created on Jul 23, 2017
 Example parameters:
     --match ../dat/000409_xtetrans_1a_match.dat --mindelta 0.1 --minsig 1.0 --minchisq 2.0  --objid 114 144 --recoverable
 '''
-from rotseana.findburst_gd import findburst_gd
+from rotseana.findburst.findburst_gd import findburst_gd
 
 def findburst_gd_cmd(match,mindelta,minsig,pdffile=None, log=None, plot=False,fits_index=1,minchisq=None,objid=None,refra=None,refdec=None,rotse=None,emask=None,rmask=None, recoverable=False, recover=False, recdir=None, verbose=False):
     result=findburst_gd(match,mindelta,minsig,pdffile=pdffile, plot=plot,fits_index=fits_index,minchisq=minchisq,objid=objid,refra=refra,refdec=refdec,rotse=rotse,log=log,emask=emask,rmask=rmask, recoverable=recoverable, recover=recover, recdir=recdir, verbose=verbose)

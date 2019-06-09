@@ -9,7 +9,7 @@ example parameters:
     -f ../../../smu/dat/000901_sky0001_1a_match.datc
 '''
 
-from rotseana.getcoords import getcoords
+from rotseana.findburst.getcoords import getcoords
 
 
 def cmdargs():

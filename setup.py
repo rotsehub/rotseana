@@ -80,9 +80,9 @@ def import_setup_utils():
 
 setup_utils = import_setup_utils()
 # PACKAGES = setup_utils.find_packages('py')
-PACKAGES = find_packages('py', exclude=("rotseutil.tests",))
+PACKAGES = find_packages('py', exclude=("rotseana.findburst.tests",))
 PACKAGE_DIR = {'': 'py'}
-NAME = 'rotseutil'
+NAME = 'rotseana'
 DESCRIPTION = ('matchutils is a set of utilities '
                'for converting MATCH structures into FITS')
 

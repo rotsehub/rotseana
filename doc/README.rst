@@ -5,11 +5,11 @@ find_burst utilities
 :Contact: kehoe@physics.smu.edu, gdhungana@mail.smu.edu, danielsela42@gmail.com
 :Acknowledgement: Robert Kehoe, Arnon Sela, Guvinda Dhungana
 
-.. warning::
 
-    This is not a complete substitute of the analysis of Variable star search with ROTSE data.
+**WARNING**
+This is not a complete substitute of the analysis of Variable star search with ROTSE data.
 
-.. contents:: *Table of Contents*
+.. contents:: **Table of Contents**
     :depth: 2
 
 ----------

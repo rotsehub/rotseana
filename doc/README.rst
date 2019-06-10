@@ -19,7 +19,7 @@ Objective
 At the beginning of the process of finding variable stars, just getting the data from one star can take an hour. After finding the coordinates of a star, one must search through all the nights to find the objid's of the same star. Then, findburst_gd must be run in IDL to extract the stars data from each night. This package attempts to simplify this process.  Some of these programs are similar to the their IDL counterparts, while others are added to shorten this process. Together, these programs can shorten the time it takes to gather the data of a star from an hour to a minute or less.
 
 --------------------------------------
-Installing for product/development use
+Installing for product/development
 --------------------------------------
 
 Installing for development using bash
@@ -31,15 +31,16 @@ Installing for development using bash
 4. Get the URL for the repository and run: git clone URL
 5. Add the py folders to the python path: export PYTHONPATH=/path/to/rotseana/py:/path/to/rotseutil/py:/path/to/rotsedatamodel/py:$PYTHONPATH
 
-Installing for product use with bash
+Installing for product using bash
 ====================================
 
 1. Download repository as ZIP through GitHub
 2. Activate a virtual environment
 3. In command line run: pip install /path/to/git-download
 
-Quick Start: common process
-===========================
+-------------------
+Recommended Process
+-------------------
 
 1. Use getcoords to create a single file with the coordinates and filtered observations over all the nights.
 2. After finding the coordinates of one star though the result of find_burst, use matchcoords_gd to gather the data over all the nights.

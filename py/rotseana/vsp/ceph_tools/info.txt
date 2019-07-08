@@ -1,0 +1,87 @@
+The following are some of the programs I developed for my work on Cepheids that may be of some use to others. I have put them in formats that should be more easy to use for general scenarios. What follows is a description of what each program is, and how to use version in the "general" folder. If you want to incorporate a program as an importable function as one of your other programs, an importable version can be found in the "importable" folder. 
+
+If you have any questions, concerns, or suggestions, please don't hesitate to contact me at grantdonnelly2@gmail.com.
+
+- Grant Donnelly 
+
+=======================================================================================================================
+
+lccal.py:
+
+    description: This program performs relative photometry on the light curve of the target object by comparing the   photometry of nearby reference stars. 
+
+    usage: In the same directory as lccal is stored, created a directory called "matchstr" and put all of the necessary match structures in this directory. If for some reason you want lccal to gather match structures from a different directory, you can edit the path near the bottom of the lccal file. 
+
+    lccal takes 4 arguments. The first two are necessary, the last two are optional. The two necessary arguments are the right ascension and declination of the target object. The third argument is the radius in which reference stars are to be looked for. This is set to 0.1 degrees by default. 
+
+    lccal( vra, vdec, radius, plots )
+
+    examples: If for the target object RA = 27.6176 and DEC = 36.5803, type in the terminal "python3 lccal.py 27.6176 36.5803" and hit enter. 
+
+    Say for example that you want the search radius to be 0.5 degrees and you don't want the program to show plots. Type "python3 lccal.py 27.6176 36.5803 0.5 False"
+
+    output: lccal will first show the "before and after" light curves of two reference stars which have had the same calibration as the target, then a plot of the target light curve before and after calibration. The program prints out the calibrated light curve from each match structure in order by epoch. Fewer observations come out of the program than come in, since only observations with improved photometry are returned.
+
+    Note: lccal.py is currently only working with ROTSE3 data. I hope to have it working with ROTSE1 data as well soon.
+
+
+
+=======================================================================================================================
+
+
+
+psigma.py
+
+    description: This program is used to search for the best period within a very narrow range of possible periods and return the error on the period measurement. This program is not used to find the period if the period is unknown, it will only work for a narrow range of periods near a known approximate period. Furthermore, psigma currently is only useful for analysis of light curves which can be closely approximated as a sine/cosine wave. This program works by performing a chi squared minimization of the goodness of fit of the light curve to a sine wave.
+
+    usage: Save a .dat file of a light curve (in format: epoch,mag,magerr) in the same directory as psigma is stored. In addition to the .dat file, psigma requires 3 arguments, and has two additional optional arguments. The required arguments are guess, which is the approximate known period, width, which is the range plus or minus the guess that will be examined, and amplitude, which is the amplitude of the light curve. The optional arguments are step_size, which is the resolution of the periods being tested (set to 0.000000001 by default), and whether the user wishes plots to be displayed.
+
+    psigma( data, guess, width, amplitude, step_size, plots)
+
+    examples: Say your light curve file is called lc.dat, and the period is about 0.345678 with an amplitude of 0.15. You want to search the range 0.01 above and below the current period guess. Type in the terminal "python3 psigma lc.dat 0.345678 0.01 0.15" and hit enter.
+
+    Now say you want to search the same area, but with a resolution of 0.00000000001 instead, and you don't want to see the plots. Type in the terminal: "python3 psigma lc.dat 0.345678 0.01 0.15 0.00000000001 False" and hit enter.
+
+    Caution! Computation times are dramatically increased with larger "width" values, and smaller "step_size" values.
+
+    output: psigma shows a series of plots that allows to user to judge whether they believe the program's findings. Good findings are indicated by a strong adherence of the light curve to the model in the upper left plot, and a convincing parabola shape in the bottom plots. The program then prints out the best period it found, and the error associated with that period. 
+
+
+
+=======================================================================================================================
+
+
+
+unconex.py
+
+    description: This program is a filter which takes in a raw light curve, and returns a new light curve consisting of the combined observations which have been confirmed and are consistent. First, observations are grouped based on their closeness in time, then the members of these groups are checked for consistency by comparing the relative magnitude measurements to the sum of their error bars, and finally the members of each group are averaged into one observation.
+
+    usage: save a .dat file of the raw light curve (in format: epoch,mag,magerr) in the same directory as unconex is stored. Unconex takes two necessary arguments, the first is the .dat file, and the second is the "kind," which tells the program whether it is dealing with orphans data or supernova data. 
+
+    unconex( data, kind )
+
+    examples: For a light curve of orphans data saved in the file "lc.dat," type in the terminal "python3 unconex.py lc.dat orphans" and hit enter.
+
+    If the light curve consists of supernova fields data, type instead: "python3 unconex.py lc.dat sn" and hit enter.
+
+    output: unconex will print out the new light curve of filtered, averaged data. If the data was consistent in the first place, you can expect slightly less than half of the number of observations to come out. The number decreases with the quality of the original data.
+
+
+
+=======================================================================================================================
+
+    
+
+lcvis.py
+
+    description: This program is used to examine the phased light curve with a particular period. There are various ways that a period can be input. Upon running the program, a window should appear with some buttons, text boxes, and a slider. The plot is showing the phase plot of the input light curve with the current period. The current period is always shown at the top of the window. The first way to change the period is to just type in the wanted period in the appropriate box and press enter. The "add" and "subtract" buttons can be used to add or subtract from the current period an amount equal to the current "interval," which can be set by the user. The last way to change the period is by using the slider at the bottom, which also changes by an amount equal to "interval." The text boxes to the right and left of the slider set the minimum and maximum allowed values for the slider.
+
+    usage: save a .dat file of the raw light curve (in format: epoch,mag,magerr) in the same directory as lcvis is stored. If the .dat file is called "lc.dat" type in the terminal "python3 lcvis.py lc.dat" and hit enter
+
+
+
+
+=======================================================================================================================
+
+
+*I would like to thank Dr. Kehoe for all of his help, and Daniel Sela. A substantial portion of the code in "in_match.py" is taken from Daniel's work.

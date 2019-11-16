@@ -1,4 +1,4 @@
-def unconex( data, kind ):
+def unconex( data, diff, kind ):
 
     import math
     from tools import flux2mag, mag2flux, avmag
@@ -21,11 +21,11 @@ def unconex( data, kind ):
 
         return output
 
-    def orconex( data ):
+    def orconex( data, diff ):
 
-        def confirm_obs( in_confirm ):
+        def confirm_obs( in_confirm, diff ):
 
-            allowed_diff = 0.002
+            allowed_diff = diff
 
             floatlist = list()
             for obs in in_confirm:
@@ -98,17 +98,17 @@ def unconex( data, kind ):
     
             return newlc
 
-        one = confirm_obs( data )
+        one = confirm_obs( data, diff )
         two = consistent_obs( one )
         three = make_single( two )
 
         return three
 
-    def snuconex( data ):
+    def snuconex( data, diff ):
 
-        def confirm_obs( in_confirm ):
+        def confirm_obs( in_confirm, diff ):
     
-            allowed_diff = 0.0009
+            allowed_diff = diff
 
             floatlist = list()
             for obs in in_confirm:
@@ -228,18 +228,19 @@ def unconex( data, kind ):
     
             return newlc
     
-        one = confirm_obs( data )
+        one = confirm_obs( data, diff )
         two = consistent_obs( one )
         three = make_single( two )
     
         return three
 
     lc = order(data)
+    diff = float(diff)
 
     if kind == 'orphans':
-        ans = orconex(lc)
+        ans = orconex(lc, diff)
     elif kind == 'sn':
-        ans = snuconex(lc)
+        ans = snuconex(lc, diff)
     else:
         print('unrecognized type of data scheduling')
         ans = None
@@ -251,14 +252,16 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("indata")
+parser.add_argument("indiff")
 parser.add_argument("kind")
 args = parser.parse_args()
 
 indata = args.indata
+indiff = args.indiff
 kind = args.kind
 
 ilc = (np.loadtxt(indata)).tolist()
 
-ans = unconex(ilc,kind)
+ans = unconex(ilc, indiff, kind)
 for i in ans:
     print(i[0],i[1],i[2])

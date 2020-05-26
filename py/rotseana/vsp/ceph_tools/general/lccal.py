@@ -1,4 +1,4 @@
-def lccal( match_structures, vra, vdec, requested_refstars, plots ):
+def lccal( match_structures, vra, vdec, requested_refstars, unconex, plots ):
 
     import math
     import glob
@@ -8,7 +8,7 @@ def lccal( match_structures, vra, vdec, requested_refstars, plots ):
     import numpy as np
 
     from in_match import read_data_file, getcoords, getobjids
-    from tools import mag2flux, flux2mag 
+    from tools import mag2flux, flux2mag
 
     def get_data(refra, refdec, match):
 
@@ -49,7 +49,7 @@ def lccal( match_structures, vra, vdec, requested_refstars, plots ):
         return lc
 
     def avmag( data ):
-    
+
         fluxs = list()
         for row in data:
             mag = row[1]
@@ -94,7 +94,7 @@ def lccal( match_structures, vra, vdec, requested_refstars, plots ):
         grace_time = (40) / 86400
 
         good = list()
-        for i in range(len(curve)-1): 
+        for i in range(len(curve)-1):
             if abs(curve[i][0] - curve[i+1][0]) <= curve[i][3] + grace_time:
                 if abs(curve[i][1] - curve[i+1][1]) <= 2*(((curve[i][2]**2) + (curve[i+1][2]**2))**0.5):
                     if curve[i][0] not in good:
@@ -111,11 +111,10 @@ def lccal( match_structures, vra, vdec, requested_refstars, plots ):
         grace_time = (40) / 86400
 
         output = list()
-        good = list()
-        for i in range(len(lightcurve)-1): 
+        for i in range(len(lightcurve)-1):
             if abs(lightcurve[i][0] - lightcurve[i+1][0]) <= lightcurve[i][3] + grace_time:
                 if abs(lightcurve[i][1] - lightcurve[i+1][1]) <= 2*(((lightcurve[i][2]**2) + (lightcurve[i+1][2]**2))**0.5):
-                    epoch = (lightcurve[i][0] + lightcurve[i+1][0] + lightcurve[i][3]) / 2
+                    epoch = (lightcurve[i][0] + lightcurve[i+1][0] + lightcurve[i+1][3]) / 2
                     mag = flux2mag((mag2flux(lightcurve[i][1]) + mag2flux(lightcurve[i+1][1])) / 2)
                     err = ((lightcurve[i][2]**(-2) + lightcurve[i+1][2]**(-2))**(-1))**0.5
                     output.append([epoch, mag, err])
@@ -130,7 +129,7 @@ def lccal( match_structures, vra, vdec, requested_refstars, plots ):
             prox = ((abs(i[1][0]-vra)**2)+(abs(i[1][1]-vdec)**2))**0.5
             proxlist.append(prox)
             prox_and_coord.append([prox, i])
-        
+
         sorted_stars = list()
         while len(proxlist) > 0:
             closest = min(proxlist)
@@ -139,7 +138,7 @@ def lccal( match_structures, vra, vdec, requested_refstars, plots ):
                     sorted_stars.append(j[1])
                     proxlist.remove(j[0])
 
-        
+
         lightcurves = list()
         coordlist = list()
         for k in range(int(amount)):
@@ -160,13 +159,13 @@ def lccal( match_structures, vra, vdec, requested_refstars, plots ):
             spread = abs(average_mag - min(mags))
         else:
             spread = abs(average_mag - max(mags))
-        
+
         plot_yrange = [average_mag - spread, average_mag + spread]
 
         return plot_yrange
 
     def find_refstars( matchs, ra, dec, radius ):
-        
+
         cands = list()
         matchnum = len(matchs)
 
@@ -202,22 +201,22 @@ def lccal( match_structures, vra, vdec, requested_refstars, plots ):
                             if not dec - allowed_diff <= coords[1] <= dec + allowed_diff:
                                 cand = [coords, slc]
                                 cands.append(cand)
-        
+
                 print('your object was found in ',match,"(",len(surroundstars)-1,"non-target objects found in search range )")
-                
+
             except:
                 #print('cannot find your object in ',match) this is not necessarily the problem
                 matchnum = matchnum - 1
                 pass
 
         print("using data in ",matchnum," match structures.")
-  
+
         return [cands,matchnum]
 
     def confirm_refstars( matchs, pack ):
 
         print("checking potential reference stars for consistency...")
-    
+
         allowed_diff = 0.001
 
         cands = pack[0]
@@ -294,7 +293,7 @@ def lccal( match_structures, vra, vdec, requested_refstars, plots ):
 
         corrs = list()
         for epoch in epochlist:
-            
+
             diffs = list()
             for star in reference:
                 lc = star[0]
@@ -311,7 +310,7 @@ def lccal( match_structures, vra, vdec, requested_refstars, plots ):
                 corrs.append(corr)
 
         package = [svar, corrs, reference]
-    
+
         return package
 
     def calibrate_refstars( package ):
@@ -384,7 +383,7 @@ def lccal( match_structures, vra, vdec, requested_refstars, plots ):
                 original0 = reference[0][0]
                 improper0 = caled[0]
                 proper0 = list()
-            
+
                 xo0 = list()
                 yo0 = list()
                 xp0 = list()
@@ -413,7 +412,7 @@ def lccal( match_structures, vra, vdec, requested_refstars, plots ):
                 plt.title('Refstar 0 Original')
                 plt.xlabel('MJD')
                 plt.ylabel('Magnitude')
-                        
+
                 plt.subplot(2,3,2)
                 plt.scatter(xi0,yi0)
                 plt.ylim(yrange0[0], yrange0[1])
@@ -433,7 +432,7 @@ def lccal( match_structures, vra, vdec, requested_refstars, plots ):
                 original1 = reference[1][0]
                 improper1 = caled[1]
                 proper1 = list()
-            
+
                 xo1 = list()
                 yo1 = list()
                 xp1 = list()
@@ -462,7 +461,7 @@ def lccal( match_structures, vra, vdec, requested_refstars, plots ):
                 plt.title('Refstar 1 Original')
                 plt.xlabel('MJD')
                 plt.ylabel('Magnitude')
-                        
+
                 plt.subplot(2,3,5)
                 plt.scatter(xi1,yi1)
                 plt.ylim(yrange1[0], yrange1[1])
@@ -486,7 +485,7 @@ def lccal( match_structures, vra, vdec, requested_refstars, plots ):
         '''
 
         return newpackage
-    
+
     def calibrate_var( newpackage ):
 
         print("these corrections have been applied to your target light curve:")
@@ -510,7 +509,7 @@ def lccal( match_structures, vra, vdec, requested_refstars, plots ):
 
         print('using',len(newcurve),'out of',len(varlc),'epochs. (',round((len(newcurve)/len(varlc))*100,2),'% )')
 
-        if plots == True:
+        if plots == 'True' or 'true':
 
             try:
 
@@ -526,7 +525,7 @@ def lccal( match_structures, vra, vdec, requested_refstars, plots ):
                         xm.append(m[0])
                         ym.append(m[1])
                         original_curve.append(m)
-        
+
                 xn = list()
                 yn = list()
                 for n in newcurve:
@@ -554,7 +553,7 @@ def lccal( match_structures, vra, vdec, requested_refstars, plots ):
             except:
                 print("cannot show plots, this could be the result of an incompatability with matplotlib. Try again with plots argument set to False.")
                 pass
-       
+
         return newcurve
 
     if requested_refstars == 0:
@@ -587,16 +586,16 @@ def lccal( match_structures, vra, vdec, requested_refstars, plots ):
         print("gathering data...")
         one = find_refstars(matchs,vra,vdec,radius)
         two = confirm_refstars(matchs,one)
-    
+
         found_refstars = len(two)
         if found_refstars < requested_refstars:
             radius = round(radius + 0.05,2)
             print("you requested ",int(requested_refstars)," reference stars, but only ",found_refstars," were found. Trying again with search radius = ",radius," degrees.")
-    
+
         if radius == 1:
             print("search radius has reached 1 degree. Reference stars become less useful the farther the are from the target. Closing program.")
             sys.exit()
-    
+
     three = get_refavmags(two)
     print("calculating corrections for each epoch...")
     four = get_corrections(matchs,vra,vdec,three)
@@ -605,30 +604,27 @@ def lccal( match_structures, vra, vdec, requested_refstars, plots ):
     print("correcting target light curve")
     five = calibrate_var(opt)
 
-    '''
-
-    unconex = True
-    if unconex == True:
+    if unconex == 'True' or 'true':
+        print("Now filtering data")
+        print("***BE AWARE: THE UNCONEX BUILT IN TO THIS PROGRAM IS ONLY COMPATIBLE WITH ROTSE1 DATA***")
         original_length = len(five)
         five = mini_unconex(five)
         final_length = len(five)
         print("unconex filter reduced and combined the target light curve from ",original_length," observations to ",final_length," observations.")
 
-    '''
-
-    filename = 'lightcurve_ra:'+str(vra)+'_dec:'+str(vdec)+'.dat'
+    filename = 'lightcurve_ra'+str(vra)+'_dec'+str(vdec)+'.dat'
 
     print("your target light curve is printed below. You can also find a copy named ",filename," in the ",match_structures," directory.")
     finalcurve = list()
     for a in five:
         fi = [a[0], round(a[1],4), round(a[2],6)]
         finalcurve.append(fi)
-    
+
     for row in finalcurve:
         print(' '.join(str(elt) for elt in row))
 
-    np.savetxt(filename, finalcurve)
-    
+    np.savetxt(filename, finalcurve, fmt = '%.11f')
+
     return finalcurve
 
 import argparse
@@ -637,14 +633,25 @@ parser = argparse.ArgumentParser()
 parser.add_argument("match_structures")
 parser.add_argument("vra")
 parser.add_argument("vdec")
-parser.add_argument("requested_refstars", nargs='?', default=5)
-parser.add_argument("plots", nargs='?', default=True)
+parser.add_argument("requested_refstars")
+parser.add_argument("unconex")
+parser.add_argument("plots")
 args = parser.parse_args()
 
 match_structures = str(args.match_structures)
 vra = float(args.vra)
 vdec = float(args.vdec)
 requested_refstars = float(args.requested_refstars)
+unconex = args.unconex
 plots = args.plots
 
-ans = lccal(match_structures, vra, vdec, requested_refstars, plots)
+ans = lccal(match_structures, vra, vdec, requested_refstars, unconex, plots)
+
+'''
+
+CHANGES!!!
+1. added unconex argument
+2. all arguments are now required (to reduce confusion)
+3. user can run unconex on calibrated data with the unconcex argument
+
+'''

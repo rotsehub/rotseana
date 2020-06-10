@@ -509,7 +509,7 @@ def lccal( match_structures, vra, vdec, requested_refstars, unconex, plots ):
 
         print('using',len(newcurve),'out of',len(varlc),'epochs. (',round((len(newcurve)/len(varlc))*100,2),'% )')
 
-        if plots == 'True' or 'true':
+        if plots == 'True' or plots == 'true':
 
             try:
 
@@ -604,7 +604,7 @@ def lccal( match_structures, vra, vdec, requested_refstars, unconex, plots ):
     print("correcting target light curve")
     five = calibrate_var(opt)
 
-    if unconex == 'True' or 'true':
+    if unconex == 'True' or unconex == 'true':
         print("Now filtering data")
         print("***BE AWARE: THE UNCONEX BUILT IN TO THIS PROGRAM IS ONLY COMPATIBLE WITH ROTSE1 DATA***")
         original_length = len(five)

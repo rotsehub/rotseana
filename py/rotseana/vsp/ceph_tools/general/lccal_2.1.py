@@ -226,7 +226,13 @@ def save_lightcurve(lightcurve, cwd, vra, vdec):
     print(f"You can find a copy of the lightcurve named {filename} in the same directory as lccal.py")
     np.savetxt(filename, lightcurve, fmt = '%.11f')
 
-def arg2floatorbool(arg, ):
+def save_log(log_params, cwd, vra, vdec):
+    os.chdir(cwd)
+    filename = 'log_ra'+str(vra)+'_dec'+str(vdec)+'.dat'
+    print(f"You can find a copy of the log file named {filename} in the same directory as lccal.py")
+    open(f'{filename}', 'w').writelines('%s\n' % x for x in log_params)
+
+def arg2floatorbool(arg):
     pass
 
 def get_chisq(observations, pval_flag): # Computes chi-square statistic and p-value based on a single Gaussian
@@ -244,40 +250,41 @@ def get_chisq(observations, pval_flag): # Computes chi-square statistic and p-va
     else:
         return chisq
 
-def R1_unconex(lightcurve):
-    grace_time = (40) / 86400
-    output = list()
-    used = list()
+def R1_unconex(lightcurve, m_lim):
+    grace_time = 40 / 86400
+    output = []
+    used = []
+    above_m_lim = 0
+    below_m_lim = 0
     removedepochs = 0
-    for i in range(len(lightcurve)-1):
-        if lightcurve[i] not in used and lightcurve[i+1] not in used:
-            epoch1 = lightcurve[i][0]
-            epoch2 = lightcurve[i+1][0]
-            exptime1 = lightcurve[i][3]
-            exptime2 = lightcurve[i+1][3]
-            mag1 = lightcurve[i][1]
-            mag2 = lightcurve[i+1][1]
-            err1 = lightcurve[i][2]
-            err2 = lightcurve[i+1][2]
-            m_lim1 = lightcurve[i][4]
-            m_lim2 = lightcurve[i+1][4]
-            if abs(epoch1 - epoch2) <= exptime1 + grace_time:
-                if abs(mag1 - mag2) <= 2*(((err1**2) + (err2**2))**0.5):
-                    if m_lim1-4 <= mag1 <= m_lim1 and m_lim2-4 <= mag2 <= m_lim2:
-                        epoch = (epoch1 + epoch2 + exptime2) / 2
-                        mag = flux2mag((mag2flux(mag1) + mag2flux(mag2)) / 2)
-                        xerr = abs(epoch1 - epoch2) + exptime2
-                        yerr = ((err1**(-2) + err2**(-2))**(-1))**0.5
+    for i in range(len(lightcurve) - 1):
+        if not lightcurve[i][4] - 4 <= lightcurve[i][1]:
+            below_m_lim += 1
+        if not lightcurve[i][1] <= lightcurve[i][4]:
+            above_m_lim += 1
+        if lightcurve[i] not in used and lightcurve[i + 1] not in used:
+            if abs(lightcurve[i][0] - lightcurve[i + 1][0]) <= lightcurve[i][3] + grace_time:
+                if abs(lightcurve[i][1] - lightcurve[i + 1][1]) <= 2 * (((lightcurve[i][2] ** 2) + (lightcurve[i + 1][2] ** 2)) ** 0.5):
+                    epoch = (lightcurve[i][0] + lightcurve[i + 1][0] + lightcurve[i + 1][3]) / 2
+                    mag = flux2mag((mag2flux(lightcurve[i][1]) + mag2flux(lightcurve[i + 1][1])) / 2)
+                    xerr = abs(lightcurve[i][0] - lightcurve[i + 1][0]) + lightcurve[i + 1][3]
+                    yerr = ((lightcurve[i][2] ** (-2) + lightcurve[i + 1][2] ** (-2)) ** (-1)) ** 0.5
+                    if m_lim:
+                        if lightcurve[i][4] - 4 <= lightcurve[i][1] <= lightcurve[i][4] and lightcurve[i + 1][4] - 4 <= lightcurve[i + 1][1] <= lightcurve[i + 1][4]:
+                            output.append([epoch, xerr, mag, yerr])
+                            used.append(lightcurve[i])
+                            used.append(lightcurve[i + 1])
+                        else:
+                            removedepochs += 1
+                    else:
                         output.append([epoch, xerr, mag, yerr])
                         used.append(lightcurve[i])
-                        used.append(lightcurve[i+1])
-                    else:
-                        removedepochs += 1
+                        used.append(lightcurve[i + 1])
                 else:
                     removedepochs += 1           
             else:
-                removedepochs += 1     
-    return output, removedepochs
+                removedepochs += 1
+    return output, removedepochs, above_m_lim, below_m_lim
     
 def R3_unconex():
     return
@@ -294,16 +301,22 @@ def get_R1night(lightcurve, nights, epochindex):
 def get_R3night():
     pass
 
-def unconex(rotse, match_structures, vra, vdec, xerrorbars, plots, nights):
+def unconex(rotse, match_structures, vra, vdec, m_lim, xerrorbars, plots, log, nights):
     temp_matchs, cwd = get_matchstructs(match_structures)
     matchs, targetcurve = find_target(vra, vdec, temp_matchs)
     targetcurve = [x for x in targetcurve if 0 < x[1] < 99]
-    filtered_targetcurve, removedepochs = R1_unconex(targetcurve)
+    #for x in targetcurve:
+        #print(x[0], x[1], x[2], x[3], x[4])
+    filtered_targetcurve, removedepochs, above_m_lim, below_m_lim = R1_unconex(targetcurve, m_lim)
     if not xerrorbars:
         filtered_targetcurve = [[obs[0], obs[2], obs[3]] for obs in filtered_targetcurve]
     print(f'Filtration removed {removedepochs} discrepant observations out of {len(targetcurve)} total observations ({round((1 - removedepochs / len(targetcurve)) * 100, 2)}% filtration efficiency)')
     print(f'Filtration averaged {len(targetcurve) - removedepochs} non-discrepant observations to {len(filtered_targetcurve)} observations ({round(len(filtered_targetcurve) / (len(targetcurve) - removedepochs) * 100, 2)}% averaging efficiency)')
     print(f'Filtration retained {len(filtered_targetcurve)} observations out of {len(targetcurve)} total original observations ({round(len(filtered_targetcurve) / len(targetcurve) * 100, 2)}% of original observations)')
+    print(f'{above_m_lim} observations exceeded the limiting magnitude range ({round(above_m_lim / len(targetcurve) * 100, 2)}% of original observations)')
+    print(f'{below_m_lim} observations fell below the limiting magnitude range ({round(below_m_lim / len(targetcurve) * 100, 2)}% of original observations)')
+    if not m_lim:
+        print('Note: --m_lim was passed as False and observations outside the limiting magnitude range may have been retained')
     print('Note: averaging efficiency should be ~50%')
     if nights != None:
         targetcurve = get_R1night(targetcurve, nights, 0)
@@ -312,37 +325,33 @@ def unconex(rotse, match_structures, vra, vdec, xerrorbars, plots, nights):
         fig, axs = plt.subplots(2, sharex=True)
         plt.suptitle(f'Target Filtration: {vra} {vdec}')
         axs[0].errorbar([x[0] for x in targetcurve], [x[1] for x in targetcurve], yerr = [x[2] for x in targetcurve], fmt='o')
-        axs[0].set_title('Unfiltered Lightcurve')
+        axs[0].set_title('Unfiltered Light Curve')
         axs[0].invert_yaxis()
         axs[0].grid(axis='both', alpha=0.75)
         axs[0].set(xlabel = 'Time (MJD)')
         axs[0].set(ylabel='Magnitude')
-        axs[0].legend()
         axs[1].errorbar([x[0] for x in filtered_targetcurve], [x[1] for x in filtered_targetcurve], yerr = [x[2] for x in filtered_targetcurve], fmt='o', color='g')
-        axs[1].set_title('Filtered Lightcurve')
+        axs[1].set_title('Filtered Light Curve')
         axs[1].invert_yaxis()
         axs[1].grid(axis='both', alpha=0.75)
         axs[1].set(xlabel = 'Time (MJD)')
         axs[1].set(ylabel='Magnitude')
-        axs[1].legend()
         plt.show(block=False)
     elif plots and xerrorbars:
         fig, axs = plt.subplots(2, sharex=True)
         plt.suptitle(f'Target Filtration: {vra} {vdec}')
         axs[0].errorbar([x[0] for x in targetcurve], [x[1] for x in targetcurve], yerr = [x[2] for x in targetcurve], fmt='o')
-        axs[0].set_title('Unfiltered Lightcurve')
+        axs[0].set_title('Unfiltered Light Curve')
         axs[0].invert_yaxis()
         axs[0].grid(axis='both', alpha=0.75)
         axs[0].set(xlabel = 'Time (MJD)')
         axs[0].set(ylabel='Magnitude')
-        axs[0].legend()
         axs[1].errorbar([x[0] for x in filtered_targetcurve], [x[2] for x in filtered_targetcurve], xerr = [x[1] for x in filtered_targetcurve], yerr = [x[3] for x in filtered_targetcurve], fmt='o', color='g')
-        axs[1].set_title('Filtered Lightcurve')
+        axs[1].set_title('Filtered Light Curve')
         axs[1].invert_yaxis()
         axs[1].grid(axis='both', alpha=0.75)
         axs[1].set(xlabel = 'Time (MJD)')
         axs[1].set(ylabel='Magnitude')
-        axs[1].legend()
         plt.show(block=False)
     if verbose:
         print_lightcurve(filtered_targetcurve, xerrorbars)
@@ -357,9 +366,14 @@ def unconex(rotse, match_structures, vra, vdec, xerrorbars, plots, nights):
     #print(f'Filtered reduced chi-square statistic: {round(float(get_chisq([x[1] for x in filtered_targetcurve], True)[0]), 3)}')
     #print(f'Filtered p-value: {round(float(get_chisq([x[1] for x in filtered_targetcurve], True)[1]), 3)}')
     save_lightcurve(filtered_targetcurve, cwd, vra, vdec)
+    if log:
+        log_params = [f'Total observations: {len(targetcurve)}', f'Final observations: {len(filtered_targetcurve)}', f'Filtration efficiency: {round((1 - removedepochs / len(targetcurve)) * 100, 2)}%', f'Averaging efficiency: {round(len(filtered_targetcurve) / (len(targetcurve) - removedepochs) * 100, 2)}%', 
+        f'Observations retained: {round(len(filtered_targetcurve) / len(targetcurve) * 100, 2)}%', f'Observations greater than limiting magnitude range: {round(above_m_lim /  len(targetcurve) * 100, 2)}%', 
+        f'Observations less than limiting magnitude range: {round(below_m_lim / len(targetcurve) * 100, 2)}%']
+        save_log(log_params, cwd, vra, vdec)
     return
 
-def lccal(rotse, operation, match_structures, vra, vdec, requested_refstars, radius, max_mean_error, chisq_input, avmag_input, decent_epochs_input, teststar, xerrorbars, plots, nights, verbose):
+def lccal(rotse, operation, match_structures, vra, vdec, requested_refstars, radius, max_mean_error, chisq_input, avmag_input, decent_epochs_input, teststar, m_lim, xerrorbars, plots, log, nights, verbose):
 
     def find_refstars(matchs, ra, dec, radius, target_lc):
         def cuts(package):
@@ -537,44 +551,41 @@ def lccal(rotse, operation, match_structures, vra, vdec, requested_refstars, rad
                 fig, axs = plt.subplots(2, sharex=True, sharey=True)
                 plt.suptitle(f'Target Calibration: {vra} {vdec} \n Reference Stars: {requested_refstars}, Radius: {radius} degrees')
             axs[0].errorbar([x[0] for x in uncalibrated_curve], [x[1] for x in uncalibrated_curve], yerr = [x[2] for x in uncalibrated_curve], fmt='o')
-            axs[0].set_title('Uncalibrated Lightcurve')
+            axs[0].set_title('Uncalibrated Light Curve')
             axs[0].set(xlabel='Time (MJD)')
             axs[0].set(ylabel='Magnitude')
             axs[0].grid(axis='both', alpha=0.75)
             axs[0].invert_yaxis()
-            axs[0].legend()
             axs[1].errorbar([x[0] for x in calibrated_curve], [x[1] for x in calibrated_curve], yerr = [x[2] for x in calibrated_curve], fmt='o', color='g')
-            axs[1].set_title('Calibrated Lightcurve')
+            axs[1].set_title('Calibrated Light Curve')
             axs[1].set(xlabel='Time (MJD)')
             axs[1].set(ylabel='Magnitude')
             axs[1].grid(axis='both', alpha=0.75)
-            axs[1].legend()
             if operation == 'both':
                 axs[2].errorbar([x[0] for x in filtered_curve], [x[1] for x in filtered_curve], yerr = [x[2] for x in filtered_curve], fmt='o', color='orange')
-                axs[2].set_title('Filtered Lightcurve')
+                axs[2].set_title('Filtered Light Curve')
                 axs[2].grid(axis='both', alpha=0.75)
                 axs[2].set(xlabel = 'Time (MJD)')
                 axs[2].set(ylabel='Magnitude')
-                axs[2].legend()
             plt.show(block=False)
         else:
             fig, axs = plt.subplots(3, sharex=True, sharey=True)
             plt.suptitle(f'Target Calibration and Filtration: {vra} {vdec} \n Reference Stars: {requested_refstars}, Radius: {radius} degrees')
             axs[0].errorbar([x[0] for x in uncalibrated_curve], [x[1] for x in uncalibrated_curve], yerr = [x[2] for x in uncalibrated_curve], fmt='o')
-            axs[0].set_title('Uncalibrated Lightcurve')
+            axs[0].set_title('Uncalibrated Light Curve')
             axs[0].invert_yaxis()
             axs[0].grid(axis='both', alpha=0.75)
             axs[0].set(xlabel = 'Time (MJD)')
             axs[0].set(ylabel='Magnitude')
             axs[0].legend()
             axs[1].errorbar([x[0] for x in calibrated_curve], [x[1] for x in calibrated_curve], yerr = [x[2] for x in calibrated_curve], fmt='o', color='g')
-            axs[1].set_title('Calibrated Lightcurve')
+            axs[1].set_title('Calibrated Light Curve')
             axs[1].set(xlabel='Time (MJD)')
             axs[1].set(ylabel='Magnitude')
             axs[1].grid(axis='both', alpha=0.75)
             axs[1].legend()
             axs[2].errorbar([x[0] for x in filtered_curve], [x[2] for x in filtered_curve], xerr = [x[1] for x in filtered_curve], yerr = [x[3] for x in filtered_curve], fmt='o', color='orange')            
-            axs[2].set_title('Filtered Lightcurve')
+            axs[2].set_title('Filtered Light Curve')
             axs[2].grid(axis='both', alpha=0.75)
             axs[2].set(xlabel = 'Time (MJD)')
             axs[2].set(ylabel='Magnitude')
@@ -602,9 +613,9 @@ def lccal(rotse, operation, match_structures, vra, vdec, requested_refstars, rad
         calibrate_test_star(two, test_star)
     three = calibrate_target(two,target_lc)
     unfiltered = three
-    print(f'Calibration removed {len(three)} observations out of {len(target_lc)} total observations ({100* round(len(three) / len(target_lc), 2)}% calibration efficiency)')
+    print(f'Calibration retained {len(three)} observations out of {len(target_lc)} total observations ({100 * round(len(three) / len(target_lc), 2)}% calibration efficiency)')
     if rotse == 'R1' and operation == 'both':
-        three, removedepochs = R1_unconex(three)
+        three, removedepochs, above_m_lim, below_m_lim = R1_unconex(three, m_lim)
     if rotse == 'R3' and operation == 'both':
         pass
     if xerrorbars and operation == 'both':
@@ -614,8 +625,12 @@ def lccal(rotse, operation, match_structures, vra, vdec, requested_refstars, rad
     if operation == 'both':
         print(f'Filtration removed {removedepochs} discrepant observations out of {len(unfiltered)} total calibrated observations ({round((1 - removedepochs / len(unfiltered)) * 100, 2)}% filtration efficiency)')
         print(f'Filtration averaged {len(unfiltered) - removedepochs} non-discrepant calibrated observations to {len(three)} observations ({round(len(three) / (len(unfiltered) - removedepochs) * 100, 2)}% averaging efficiency)')
-        print(f'Filtration retained {len(three)} observations out of {len(unfiltered)} total calibrated observations ({round(len(three) / len(unfiltered) * 100, 2)}% of calibrated observations)')
         print('Note: averaging efficiency should be ~50%')
+        print(f'Filtration retained {len(three)} observations out of {len(unfiltered)} total calibrated observations ({round(len(three) / len(unfiltered) * 100, 2)}% of calibrated observations)')
+        print(f'{above_m_lim} observations exceeded the limiting magnitude range ({round(above_m_lim / len(unfiltered) * 100, 2)}% of original observations)')
+        print(f'{below_m_lim} observations fell below the limiting magnitude range ({round(below_m_lim / len(unfiltered) * 100, 2)}% of original observations)')
+        if not m_lim:
+            print('Note: --m_lim was passed as False and observations outside the limiting magnitude range may have been retained')
         print(f'Calibration and filtration together retained {len(three)} observations out {len(target_lc)} total original observations ({round(len(three)/ len(target_lc) * 100, 2)}% of original observations')
     raw = [obs for obs in target_lc if 0 < obs[1] < 99]
     if nights != None:
@@ -623,6 +638,14 @@ def lccal(rotse, operation, match_structures, vra, vdec, requested_refstars, rad
         three = get_R1night(three, nights, 0)
         unfiltered = get_R1night(unfiltered, nights, 0)
     save_lightcurve(three, cwd, vra, vdec)
+    if log:
+        if operation == 'both':
+            log_params = [f'Total observations: {len(target_lc)}', f'Final observations: {len(three)}', f'Calibration effciency: {round(len(unfiltered) / len(target_lc) * 100, 2)}%', f'Filtration efficiency: {round((1 - removedepochs / len(unfiltered)) * 100, 2)}%', f'Averaging efficiency: {round(len(three) / (len(unfiltered) - removedepochs) * 100, 2)}%', 
+            f'Observations retained: {round(len(three) / len(unfiltered) * 100, 2)}%', f'Observations greater than limiting magnitude range: {round(above_m_lim /  len(unfiltered) * 100, 2)}%', 
+            f'Observations less than limiting magnitude range: {round(below_m_lim / len(unfiltered) * 100, 2)}%']
+        else:
+            log_params = [f'Total observations: {len(target_lc)}', f'Final observations: {len(three)}', f'Calibration effciency: {round(len(three) / len(target_lc) * 100, 2)}%']
+        save_log(log_params, cwd, vra, vdec)
     if verbose:
         print_lightcurve(three, xerrorbars)
     if plots:
@@ -656,13 +679,15 @@ parser.add_argument("--requested_refstars", "-ref", default = 5, type = int, hel
 parser.add_argument("--radius", "-r", default = 0.1, type = float, help = 'Maximum search radius for reference stars')
 parser.add_argument("--max_mean_error", "-e", default = 0.06, help = 'Maximum mean photometric error of reference stars (False to disable)')
 parser.add_argument("--chisq", "-c", default = 10, help = 'Maximum reduced chi-square statistic of reference stars on a majority of nights (False to disable)')
-parser.add_argument("--avmag", "-a", default = True, help = 'Average magnitude of reference stars within limiting magnitude (False to disable)' )
+parser.add_argument("--avmag", "-a", default = True, help = 'Average magnitude of reference stars within limiting magnitude (False to disable)')
+parser.add_argument("--m_lim", "-m", default = True, help = 'Filter observations based upon limiting magnitude (False to disable)')
 parser.add_argument("--decent_epochs", "-d", default = 0.9, help = 'Minimum fraction of reference star observations needed after unphysical observations have been removed')
-parser.add_argument("--teststar", "-t", default = True, help = 'Locate and calibrate a test star to validate corrections (True/False)')
-parser.add_argument("--xerrorbars", "-x", default = False, help = 'Calculate error along x-axis (time) when filtering data (True/False)')
-parser.add_argument("--plots", "-p", default = False, help = 'Display target lightcurve before and after calibration and/or filtration (True/False)')
+parser.add_argument("--teststar", "-t", default = True, help = 'Locate and calibrate a test star to validate corrections (False to disable)')
+parser.add_argument("--xerrorbars", "-x", default = False, help = 'Calculate error along x-axis (time) when filtering data (True to enable)')
+parser.add_argument("--plots", "-p", default = False, help = 'Display target lightcurve before and after calibration and/or filtration (True to enable)')
+parser.add_argument("--log", "-l", default = True, help = 'Save calibration and/or filtration metrics to log file (False to disable)')
 parser.add_argument("--nights", "-n", default = None, help = 'Only save and/or print lightcurve of the given night')
-parser.add_argument("--verbose", "-v", default = False, help = 'Print target calibrated and/or filtered lightcurve and additional information to terminal (True/False)')
+parser.add_argument("--verbose", "-v", default = False, help = 'Print target calibrated and/or filtered lightcurve and additional information to terminal (True to enable)')
 args = parser.parse_args()
 
 rotse = args.rotse
@@ -685,6 +710,9 @@ else:
 avmag_input = args.avmag
 if avmag_input == 'False' or avmag_input == 'false':
     avmag_input = False
+m_lim = args.m_lim
+if m_lim == 'False' or m_lim == 'false':
+    m_lim = False
 decent_epochs_input = args.decent_epochs
 if decent_epochs_input == 'False' or decent_epochs_input == 'false':
     decent_epochs_input = False
@@ -705,6 +733,9 @@ if plots == 'True' or plots == 'true':
     plots = True
 else:
     plots = False
+log = args.log
+if log == 'False' or log == 'false':
+    log = False
 nights = args.nights
 if nights != None:
     nights = nights.split(",")
@@ -720,9 +751,9 @@ if rotse == 'R3':
     print('Did you mean ROTSE-I? If so, please try again using \'R1\' instead of \'R3\'')
     sys.exit()
 if operation == 'calibrate' or operation == 'both':
-    lccal(rotse, operation, match_structures, vra, vdec, requested_refstars, radius, max_mean_error, chisq_input, avmag_input, decent_epochs_input, teststar, xerrorbars, plots, nights, verbose)
+    lccal(rotse, operation, match_structures, vra, vdec, requested_refstars, radius, max_mean_error, chisq_input, avmag_input, decent_epochs_input, teststar, m_lim, xerrorbars, plots, log, nights, verbose)
 if operation == 'filter':
-    unconex(rotse, match_structures, vra, vdec, xerrorbars, plots, nights)
+    unconex(rotse, match_structures, vra, vdec, m_lim, xerrorbars, plots, log, nights)
 plt.show()
 
 #TODO: Come up with Github setup compatible with co-op coding

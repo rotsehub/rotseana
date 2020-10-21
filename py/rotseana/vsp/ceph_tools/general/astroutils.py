@@ -16,7 +16,7 @@ def evaluateBooleanArg(argument):
         argument = False
     return argument
 
-def main(file, rightAscension, declination, matchDirectory, decimalCoords, convertHjd, truncateHjd, period, epoch, plot, save, verbose):
+def main(file, rightAscension, declination, decimalCoords, convertHjd, truncateHjd, period, epoch, plot, save, verbose):
     def openFile(file):
         data = list(open(file).read().splitlines())
         data = [x.split() for x in data]

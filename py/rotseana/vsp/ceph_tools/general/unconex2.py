@@ -6,7 +6,6 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import readsav
-import scipy
 from scipy import stats as st
 from astropy.io import fits
 from decimal import Decimal
@@ -173,8 +172,7 @@ def unconex(lightCurve, schedule, threshold, xerror):
     confirmation = [[0, 0] for x in lightCurve] # Array for confirmation state of each observation
     consistence = [[0, 0] for x in lightCurve] # Array for consistence state of each observation
     filtLightCurve = [] # Array for filtered light curve
-    graceTime = 40 # Grace time definition
-    readoutTime = 10 
+    graceTime = 40 # Grace time definition 
     for x in range(len(confirmation) - 1): # Loop through each entry in confirmation
         if abs(lightCurve[x][0] - lightCurve[x + 1][0]) <= (lightCurve[x][3] + graceTime) / 86400:
             confirmation[x][1] += 1
@@ -186,24 +184,22 @@ def unconex(lightCurve, schedule, threshold, xerror):
                 consistence[x + 1][0] += 1
         else: 
             pass
-    confirmationCount = 0
-    consistenceCount = 0
-    for x in range(len(lightCurve)):
-        if confirmation[x][0] == 1 or confirmation[x][1] == 1:
-            confirmationCount += 1
-        if consistence[x][0] == 1 or consistence[x][1] == 1:
-            consistenceCount += 1
-    print(f'{confirmationCount} observations were confirmed')
-    print(f'{consistenceCount} observations are consistent')
+    unconfirmed = [lightCurve[x] for x in range(len(lightCurve)) if confirmation[x][0] != 1 and confirmation[x][1] != 1]
+    inconsistent = [lightCurve[x] for x in range(len(lightCurve)) if consistence[x][0] != 1 and consistence[x][1] != 1 and lightCurve[x] not in unconfirmed]
+    print(f'{len(lightCurve) - len(unconfirmed)} observations were confirmed')
+    print(f'{len(lightCurve) - len(unconfirmed) - len(inconsistent)} observations are consistent')
     averaged = []
     i = 0
     while i in range(len(lightCurve)):
         if i == len(lightCurve) - 1:
             if consistence[i][0] == 1 and consistence[i - 1][1] == 1:
-                filtLightCurve.append([lightCurve[i][0], lightCurve[i][1], lightCurve[i][2]])
+                point = [lightCurve[i][0] + lightCurve[i][3] / 86400 / 2, lightCurve[i][1], lightCurve[i][2]]
+                if xerror:
+                    point.append(lightCurve[i][3] / 86400 / 2)
+                filtLightCurve.append(point)
             i += 1
         elif consistence[i][1] == 1 and consistence[i + 1][0] == 1:
-            meanEpoch = (lightCurve[i][0] + lightCurve[i + 1][0] + (lightCurve[i + 1][3] + readoutTime) / 86400) / 2
+            meanEpoch = (lightCurve[i][0] + lightCurve[i + 1][0] + (lightCurve[i + 1][3]) / 86400) / 2
             meanMag = np.average([lightCurve[i][1], lightCurve[i + 1][1]], weights = [1 / lightCurve[i][2] ** 2, 1 / lightCurve[i + 1][2] ** 2])
             if abs(lightCurve[i][1] - lightCurve[i + 1][1]) >= math.sqrt(2) * np.mean([lightCurve[i][2], lightCurve[i + 1][2]]):
                 meanErr = abs(lightCurve[i][1] - lightCurve[i + 1][1]) / math.sqrt(2)
@@ -217,37 +213,36 @@ def unconex(lightCurve, schedule, threshold, xerror):
             averaged.append([point, lightCurve[i], lightCurve[i + 1]])
             i += 2
         elif consistence[i][0] == 1 and consistence[i - 1][1] == 1:
-            point = [lightCurve[i][0], lightCurve[i][1], lightCurve[i][2]]
+            point = [lightCurve[i][0] + lightCurve[i][3] / 86400 / 2, lightCurve[i][1], lightCurve[i][2]]
             if xerror:
-                point.append(0)
+                point.append(lightCurve[i][3] / 86400 / 2)
             filtLightCurve.append(point)
             i += 1
         else:
             i += 1
     print(f'{len(averaged) * 2} observations were averaged')
     print(f'{len(filtLightCurve) - len(averaged)} consistent but unpaired observations were retained')
-    return filtLightCurve, averaged, confirmationCount, consistenceCount
+    return filtLightCurve, averaged, unconfirmed, inconsistent
 
-def getPlots(lightCurve, filtLightCurve, flagged, averaged, rightAscension, declination, bitmask, minUncertainty, xerror):
+def getPlots(lightCurve, filtLightCurve, flagged, averaged, unconfirmed, inconsistent, rightAscension, declination, bitmask, minUncertainty, xerror):
     lightCurve = [[x[0], x[1], x[2]] for x in lightCurve]
+    unconfirmed = [[x[0], x[1], x[2]] for x in unconfirmed]
+    inconsistent = [[x[0], x[1], x[2]] for x in inconsistent]
     meanErr = np.mean([x[2] for x in lightCurve])
     filtMeanErr = np.mean([x[2] for x in filtLightCurve])
-    pairedObs = [[x[1], x[2]] for x in averaged]
-    pairedObs = [y for x in pairedObs for y in x]
-    pairedObs = [[x[0], x[1], x[2]] for x in pairedObs]
-    unpairedObs = [x for x in filtLightCurve if x in lightCurve]
-    discardedObs = [x for x in lightCurve if x not in pairedObs]
-    discardedObs = [x for x in discardedObs if x not in unpairedObs]
-    maskedObs = [x for x in lightCurve if x not in discardedObs]
-    if xerror:
-        unpairedObs = [x for x in filtLightCurve if x in [[i[0], i[1], i[2], 0] for i in lightCurve]]
-    else:
-        unpairedObs = [x for x in filtLightCurve if x in lightCurve]
+    maskedObs = [x for x in lightCurve if x not in unconfirmed and x not in inconsistent]
+    averagedObs = [x[0] for x in averaged]
+    unpairedObs = [x for x in filtLightCurve if x not in averagedObs]
+    #if xerror:
+        #unpairedObs = [x for x in filtLightCurve if x in [[i[0], i[1], i[2], 0] for i in lightCurve]]
+    #else:
+        #unpairedObs = [x for x in filtLightCurve if x in lightCurve]
     fig, axs = plt.subplots(2, sharex = True, sharey = True)
     ax1, ax2 = axs
     ax1.errorbar([x[0] for x in maskedObs], [x[1] for x in maskedObs], [x[2] for x in maskedObs], fmt = 'o', color = 'tab:blue', label = f'Masked Observations ({len(maskedObs)})')
     ax1.errorbar([x[0] for x in flagged[8]], [x[1] for x in flagged[8]], [x[2] for x in flagged[8]], fmt = '+', color = 'tab:orange', label = f'Flagged Observations ({len(flagged[8])})')
-    ax1.errorbar([x[0] for x in discardedObs], [x[1] for x in discardedObs], [x[2] for x in discardedObs], fmt = '+', color = 'tab:red', label = f'Discarded Observations ({len(discardedObs)})')
+    ax1.errorbar([x[0] for x in unconfirmed], [x[1] for x in unconfirmed], [x[2] for x in unconfirmed], fmt = '+', color = 'tab:olive', label = f'Unconfirmed Observations ({len(unconfirmed)})')
+    ax1.errorbar([x[0] for x in inconsistent], [x[1] for x in inconsistent], [x[2] for x in inconsistent], fmt = '+', color = 'tab:red', label = f'Inconsistent Observations ({len(inconsistent)})')
     ax1.set_title(f'Target: {rightAscension:.7f} {declination:.7f}\nBitmask = {bitmask}, $\sigma_{{min}} = {minUncertainty}$\nUnfiltered Light Curve\n$\\bar{{\sigma}} = {meanErr:.6f}$')
     ax1.set(xlabel = 'Time (MJD)')
     ax1.set(ylabel = 'Magnitude')
@@ -255,10 +250,10 @@ def getPlots(lightCurve, filtLightCurve, flagged, averaged, rightAscension, decl
     ax1.invert_yaxis()
     ax1.legend()
     if xerror:
-        ax2.errorbar([x[0] for x in filtLightCurve if x not in unpairedObs], [x[1] for x in filtLightCurve if x not in unpairedObs], [x[2] for x in filtLightCurve if x not in unpairedObs], [x[3] for x in filtLightCurve if x not in unpairedObs], fmt = 'o', color = 'tab:blue', label = f'Averaged Observations ({len(filtLightCurve) - len(unpairedObs)})')
-        ax2.errorbar([x[0] for x in unpairedObs], [x[1] for x in unpairedObs], [x[2] for x in unpairedObs], fmt = 'o', color = 'tab:green', label = f'Unaveraged Observations ({len(unpairedObs)})')
+        ax2.errorbar([x[0] for x in averagedObs], [x[1] for x in averagedObs], [x[2] for x in averagedObs], [x[3] for x in averagedObs], fmt = 'o', color = 'tab:blue', label = f'Averaged Observations ({len(averagedObs)})')
+        ax2.errorbar([x[0] for x in unpairedObs], [x[1] for x in unpairedObs], [x[2] for x in unpairedObs], [x[3] for x in unpairedObs], fmt = 'o', color = 'tab:green', label = f'Unaveraged Observations ({len(unpairedObs)})')
     else:
-        ax2.errorbar([x[0] for x in filtLightCurve if x not in unpairedObs], [x[1] for x in filtLightCurve if x not in unpairedObs], [x[2] for x in filtLightCurve if x not in unpairedObs], fmt = 'o', color = 'tab:blue', label = f'Averaged Observations ({len(filtLightCurve) - len(unpairedObs)})')
+        ax2.errorbar([x[0] for x in averagedObs], [x[1] for x in averagedObs], [x[2] for x in averagedObs], fmt = 'o', color = 'tab:blue', label = f'Averaged Observations ({len(averagedObs)})')
         ax2.errorbar([x[0] for x in unpairedObs], [x[1] for x in unpairedObs], [x[2] for x in unpairedObs], fmt = 'o', color = 'tab:green', label = f'Unaveraged Observations ({len(unpairedObs)})')   
     ax2.set_title(f'Filtered Light Curve\n$\\bar{{\sigma}} = {filtMeanErr:.6f}$')
     ax2.set(xlabel = 'Time (MJD)')
@@ -266,7 +261,7 @@ def getPlots(lightCurve, filtLightCurve, flagged, averaged, rightAscension, decl
     ax2.grid(axis = 'both', alpha = 0.75)
     ax2.legend()
 
-def getTestPlots(lightCurve, filtLightCurve, averaged, flagged, rightAscension, declination):
+def getTestPlots(lightCurve, filtLightCurve, averaged, flagged, unconfirmed, inconsistent, rightAscension, declination):
     fig, axs = plt.subplots(1)
     lightCurve = [[x[0], x[1], x[2]] for x in lightCurve]
     pairedObs = [[x[1], x[2]] for x in averaged]
@@ -281,12 +276,51 @@ def getTestPlots(lightCurve, filtLightCurve, averaged, flagged, rightAscension, 
     axs.errorbar([x[0] for x in pairedObs], [x[1] for x in pairedObs], [x[2] for x in pairedObs], fmt = 'o', color = 'tab:blue', label = f'Paired Observations ({len(pairedObs)})')
     axs.errorbar([x[0] for x in unpairedObs], [x[1] for x in unpairedObs], [x[2] for x in unpairedObs], fmt = 'o', color = 'tab:green', label = f'Unpaired Observations ({len(unpairedObs)})')
     axs.errorbar([x[0] for x in avgObs], [x[1] for x in avgObs], [x[2] for x in avgObs], fmt = 'o', color = 'tab:purple', label = f'Averaged Observations ({len(averaged)})')
-    axs.errorbar([x[0] for x in discardedObs], [x[1] for x in discardedObs], [x[2] for x in discardedObs], fmt = '+', color = 'tab:red', label = f'Discarded Observations ({len(discardedObs)})')
+    axs.errorbar([x[0] for x in unconfirmed], [x[1] for x in unconfirmed], [x[2] for x in unconfirmed], fmt = '+', color = 'tab:olive', label = f'Unconfirmed Observations ({len(unconfirmed)})')
+    axs.errorbar([x[0] for x in inconsistent], [x[1] for x in inconsistent], [x[2] for x in inconsistent], fmt = '+', color = 'tab:red', label = f'Inconsistent Observations ({len(inconsistent)})')
     axs.set(xlabel = 'Time (MJD)')
     axs.set(ylabel = 'Magnitude')
     axs.grid(axis = 'both', alpha = 0.75)
     axs.invert_yaxis()
     axs.legend()
+
+## Write # of flags and the end of file
+def writeFlags(binaryBitmask, flagged, vra, vdec,cwd,totalObs):
+    filename = 'lightcurve_ra'+str(vra)+'_dec'+str(vdec)+'.dat' ## put the file name in a variable
+    os.chdir(cwd) ## get to the right directory 
+    openedFile = open(f'{filename}', 'a') ## open the file to edit it
+    if binaryBitmask[7] == '1': ## if user wants to use this flag (selcted this bitmask as an arugment)
+        print(f'{len(flagged[7])} observations flagged as biased were removed') # print to console # of observations removed for this flag
+        text = str(len(flagged[7])) + ' (' + str(round(len(flagged[7])/totalObs*100,2))+ '%' + ' of total)' + ' observations flagged as biased were removed' # put into a variable the text about # of observations removed for this flag
+        openedFile.writelines('\n' + text) # append the text at the end of the file on a new line
+    if binaryBitmask[6] == '1':
+        print(f'{len(flagged[6])} observations flagged as deblended were removed')
+        text = str(len(flagged[6]))+ ' (' + str(round(len(flagged[6])/totalObs*100,2))+ '%' + ' of total)' + ' observations flagged as deblended were removed'
+        openedFile.writelines('\n' + text)        
+    if binaryBitmask[5] == '1':
+        print(f'{len(flagged[5])} observations flagged as saturated were removed')
+        text = str(len(flagged[5]))+ ' (' + str(round(len(flagged[5])/totalObs*100,2))+ '%' + ' of total)' + ' observations flagged as saturated were removed'
+        openedFile.writelines('\n' + text)    
+    if binaryBitmask[4] == '1':
+        print(f'{len(flagged[4])} observations flagged as too close to an image boundary were removed')
+        text = str(len(flagged[4]))+ ' (' + str(round(len(flagged[4])/totalObs*100,2))+ '%' + ' of total)' + ' observations flagged as too close to an image boundary were removed'
+        openedFile.writelines('\n' + text)    
+    if binaryBitmask[3] == '1':
+        print(f'{len(flagged[3])} observations flagged as having an incomplete or corrupt photometric aperture were removed')
+        text = str(len(flagged[3]))+ ' (' + str(round(len(flagged[3])/totalObs*100,2))+ '%' + ' of total)' + ' observations flagged as having an incomplete or corrupt photometric aperture were removed'
+        openedFile.writelines('\n' + text)
+    if binaryBitmask[2] == '1':
+        print(f'{len(flagged[2])} observations flagged as having an incomplete or corrupt isophotal footprint were removed')
+        text = str(len(flagged[2]))+ ' (' + str(round(len(flagged[2])/totalObs*100,2))+ '%' + ' of total)' + ' observations flagged as having an incomplete or corrupt isophotal footprint were removed'
+        openedFile.writelines('\n' + text)    
+    if binaryBitmask[1] == '1':
+        print(f'{len(flagged[1])} observations flagged as having a memory overflow during deblending were removed')
+        text = str(len(flagged[1]))+ ' (' + str(round(len(flagged[1])/totalObs*100,2))+ '%' + ' of total)' + ' observations flagged as having a memory overflow during deblending were removed'
+        openedFile.writelines('\n' + text)    
+    if binaryBitmask[0] == '1':
+        print(f'{len(flagged[0])} observations flagged as having a memory overflow during extraction were removed')
+        text = str(len(flagged[0]))+ ' (' + str(round(len(flagged[0])/totalObs*100,2))+ '%' + ' of total)' + ' observations flagged as having a memory overflow during extraction were removed'
+        openedFile.writelines('\n' + text)    
 
 
 def sexa2deci(rightAscension, declination):
@@ -336,16 +370,16 @@ def main(fileDir, schedule, rightAscension, declination, threshold, bitmask, min
     for x in lightCurve:
         if x[2] < minUncertainty:
             x[2] = minUncertainty
-    filtLightCurve, averaged, confirmationCount, consistenceCount = unconex(lightCurve, schedule, threshold, xerror)
+    filtLightCurve, averaged, unconfirmed, inconsistent = unconex(lightCurve, schedule, threshold, xerror)
     if verbose:
         print_lightcurve(filtLightCurve, xerror, True)
     if plot:
-        getPlots(lightCurve, filtLightCurve, flagged, averaged, rightAscension, declination, bitmask, minUncertainty, xerror)
+        getPlots(lightCurve, filtLightCurve, flagged, averaged, unconfirmed, inconsistent, rightAscension, declination, bitmask, minUncertainty, xerror)
     if save:
         save_lightcurve(filtLightCurve, cwd, rightAscension, declination)
     if log:
         logParams = [f'Extracted observations: {len(extractedObs)}', f'Physical observations: {len(lightCurve) + len(flagged[8])}', f'Masked observations: {len(lightCurve)}', 
-        f'Flagged observations: {len(flagged[8])}', f'Confirmed observations: {confirmationCount}', f'Constistent observations: {consistenceCount}', 
+        f'Flagged observations: {len(flagged[8])}', f'Confirmed observations: {len(lightCurve) - len(unconfirmed)}', f'Constistent observations: {len(lightCurve) - len(unconfirmed) - len(inconsistent)}', 
         f'Averaged observations: {len(averaged) * 2}', f'Unpaired observations: {len(filtLightCurve) - len(averaged)}', f'Filtered observations: {len(filtLightCurve)}']
         save_log(logParams, cwd, rightAscension, declination)
     for x in averaged:
@@ -359,7 +393,9 @@ def main(fileDir, schedule, rightAscension, declination, threshold, bitmask, min
         np.savetxt('avgobs_ra'+str(rightAscension)+'_dec'+str(declination)+'.dat', avgObs, fmt = '%.11f')
         np.savetxt('priorobs_ra'+str(rightAscension)+'_dec'+str(declination)+'.dat', priorObs, fmt = '%.11f')
         np.savetxt('subobs_ra'+str(rightAscension)+'_dec'+str(declination)+'.dat', subsequentObs, fmt = '%.11f')
-        getTestPlots(lightCurve, filtLightCurve, averaged, flagged, rightAscension, declination)
+        getTestPlots(lightCurve, filtLightCurve, averaged, flagged, unconfirmed, inconsistent, rightAscension, declination)
+    ## print numebr of flagged observations at the end of file
+    writeFlags(binaryBitmask,flagged,rightAscension,declination,cwd,len(lightCurve))
 
 parser = argparse.ArgumentParser()
 parser.add_argument("fileDir", type = str, help = 'Path to match structure directory for R1/3 or light curve file for NSVS')

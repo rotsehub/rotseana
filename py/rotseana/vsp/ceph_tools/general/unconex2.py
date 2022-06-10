@@ -3,6 +3,7 @@ import argparse
 import glob
 import os
 import sys
+import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import readsav
@@ -96,8 +97,8 @@ def get_matchstructs(match_structures):
     os.chdir(match_structures)
     temp_matchs = list()
     fits = glob.glob("*.fit")
-    dats = glob.glob("*.dat")
-    datcs = glob.glob("*.datc")
+    dats = glob.glob("*match.dat")
+    datcs = glob.glob("*match.datc")
     for fit in fits:
         temp_matchs.append(fit)
     for dat in dats:
@@ -140,13 +141,13 @@ def print_lightcurve(lightcurve, xerror, final):
 
 def save_lightcurve(lightcurve, cwd, vra, vdec):
     os.chdir(cwd)
-    filename = 'lightcurve_ra'+str(vra)+'_dec'+str(vdec)+'.dat'
+    filename = f'lightcurve_ra{vra:.5f}_dec{vdec:.5f}.dat'
     print(f"You can find a copy of the light curve named {filename} in the same directory as unconex2.py")
     np.savetxt(filename, lightcurve, fmt = '%.11f')
 
 def save_log(log_params, cwd, vra, vdec):
     os.chdir(cwd)
-    filename = 'log_ra'+str(vra)+'_dec'+str(vdec)+'.dat'
+    filename = f'log_ra{vra:.5f}_dec{vdec:.5f}.dat'
     print(f"You can find a copy of the log file named {filename} in the same directory as unconex2.py")
     open(f'{filename}', 'w').writelines('%s\n' % x for x in log_params)
 
@@ -260,6 +261,7 @@ def getPlots(lightCurve, filtLightCurve, flagged, averaged, unconfirmed, inconsi
     ax2.set(ylabel = 'Magnitude')
     ax2.grid(axis = 'both', alpha = 0.75)
     ax2.legend()
+    return fig
 
 def getTestPlots(lightCurve, filtLightCurve, averaged, flagged, unconfirmed, inconsistent, rightAscension, declination):
     fig, axs = plt.subplots(1)
@@ -285,8 +287,8 @@ def getTestPlots(lightCurve, filtLightCurve, averaged, flagged, unconfirmed, inc
     axs.legend()
 
 ## Write # of flags and the end of file
-def writeFlags(binaryBitmask, flagged, vra, vdec,cwd,totalObs):
-    filename = 'lightcurve_ra'+str(vra)+'_dec'+str(vdec)+'.dat' ## put the file name in a variable
+def writeFlags(binaryBitmask, flagged, vra, vdec, cwd, totalObs):
+    filename = f'lightcurve_ra{vra:.5f}_dec{vdec:.5f}.dat' ## put the file name in a variable
     os.chdir(cwd) ## get to the right directory 
     openedFile = open(f'{filename}', 'a') ## open the file to edit it
     if binaryBitmask[7] == '1': ## if user wants to use this flag (selcted this bitmask as an arugment)
@@ -328,7 +330,7 @@ def sexa2deci(rightAscension, declination):
     declination = float(''.join(declination[:2])) + float(''.join(declination[2:4])) / 60 + float(''.join(declination[4:])) / 3600
     return rightAscension, declination
 
-def main(fileDir, schedule, rightAscension, declination, threshold, bitmask, minUncertainty, xerror, plot, save, verbose, log, night, dev):
+def main(fileDir, schedule, rightAscension, declination, threshold, bitmask, minUncertainty, xerror, plot, picklePlot, save, verbose, log, night, dev):
     if rightAscension[6] == '.':
         rightAscension, declination = sexa2deci(rightAscension, declination)
     else:
@@ -373,8 +375,13 @@ def main(fileDir, schedule, rightAscension, declination, threshold, bitmask, min
     filtLightCurve, averaged, unconfirmed, inconsistent = unconex(lightCurve, schedule, threshold, xerror)
     if verbose:
         print_lightcurve(filtLightCurve, xerror, True)
-    if plot:
-        getPlots(lightCurve, filtLightCurve, flagged, averaged, unconfirmed, inconsistent, rightAscension, declination, bitmask, minUncertainty, xerror)
+    if plot or picklePlot:
+        os.chdir(cwd)
+        fig = getPlots(lightCurve, filtLightCurve, flagged, averaged, unconfirmed, inconsistent, rightAscension, declination, bitmask, minUncertainty, xerror)
+        if picklePlot:
+            filename = f'fig_ra{rightAscension:.5f}+dec{declination:.5f}.pkl'
+            pickle.dump(fig, open(f'{filename}', 'wb'))
+            print(f"A pickled plot of the light curve named {filename} has been saved in the same directory as unconex2.py")
     if save:
         save_lightcurve(filtLightCurve, cwd, rightAscension, declination)
     if log:
@@ -396,6 +403,8 @@ def main(fileDir, schedule, rightAscension, declination, threshold, bitmask, min
         getTestPlots(lightCurve, filtLightCurve, averaged, flagged, unconfirmed, inconsistent, rightAscension, declination)
     ## print numebr of flagged observations at the end of file
     writeFlags(binaryBitmask,flagged,rightAscension,declination,cwd,len(lightCurve))
+    if plot:
+        plt.show()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("fileDir", type = str, help = 'Path to match structure directory for R1/3 or light curve file for NSVS')
@@ -406,10 +415,11 @@ parser.add_argument("--threshold", "-t", type = float, default = 2, help = 'Thre
 parser.add_argument("--bitmask", "-b", type = int, default = 0, help = 'Remove flagged observations with the specified bit mask')
 parser.add_argument("--minUncertainty", "-u", type = float, default = 0.02, help = 'Minimum uncertainty of magnitude measurements')
 parser.add_argument("--xerror", "-x", default = False, help = 'Calculate error along x-axis (time) when filtering data (True to enable)')
-parser.add_argument("--plot", "-p", default = True, help = 'Display target\'s light curve before and after processing (True to enable)')
+parser.add_argument("--plot", "-p", default = True, help = 'Display target\'s light curve before and after processing (False to disable)')
+parser.add_argument("--picklePlot", "-pk", default = False, help = 'Save interactive plot of target\'s light curve before and after processing (True to enable)')
 parser.add_argument("--save", "-s", default = True, help = 'Save the target\'s processed light curve to a .dat file (False to disable)')
 parser.add_argument("--verbose", "-v", default = False, help = 'Print target\'s processed light curve and additional information to terminal (True to enable)')
-parser.add_argument("--log", "-l", default = False, help = 'Save processing metrics to log file (False to disable)')
+parser.add_argument("--log", "-l", default = False, help = 'Save processing metrics to log file (True to enable)')
 parser.add_argument("--night", "-n", type = int, default = None, help = 'Only process the target\'s light curve for a specifc night')
 parser.add_argument("--dev", "-d", default = False, help = 'Enable developer mode to output additional data and plots')
 args = parser.parse_args()
@@ -432,6 +442,7 @@ if minUncertainty < 0:
     sys.exit()
 xerror = evaluateBooleanArg(args.xerror)
 plot = evaluateBooleanArg(args.plot)
+picklePlot = evaluateBooleanArg(args.picklePlot)
 save = evaluateBooleanArg(args.save)
 verbose = evaluateBooleanArg(args.verbose)
 log = evaluateBooleanArg(args.log)
@@ -440,5 +451,4 @@ if night != None and schedule =='NSVS':
     print('ArgumentError: Can only plot/save indvidual nights for ROTSE-I and III data')
     night = None
 dev = evaluateBooleanArg(args.dev)
-main(fileDir, schedule, ra, dec, threshold, bitmask, minUncertainty, xerror, plot, save, verbose, log, night, dev)
-plt.show()
+main(fileDir, schedule, ra, dec, threshold, bitmask, minUncertainty, xerror, plot, picklePlot, save, verbose, log, night, dev)

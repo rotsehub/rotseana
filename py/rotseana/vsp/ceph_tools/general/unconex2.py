@@ -1,3 +1,6 @@
+#UNCONEX VERSION 2.3
+#UPDATED 6/13/2022
+
 import math
 import argparse
 import glob
@@ -96,7 +99,7 @@ def get_matchstructs(match_structures):
     cwd = os.getcwd()
     os.chdir(match_structures)
     temp_matchs = list()
-    fits = glob.glob("*.fit")
+    fits = glob.glob("*match.fit")
     dats = glob.glob("*match.dat")
     datcs = glob.glob("*match.datc")
     for fit in fits:

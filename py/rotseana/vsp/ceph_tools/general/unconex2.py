@@ -1,5 +1,5 @@
-#UNCONEX VERSION 2.3
-#UPDATED 6/13/2022
+#UNCONEX VERSION 2.3.1
+#UPDATED 7/29/2022
 
 import math
 import argparse
@@ -348,6 +348,7 @@ def main(fileDir, schedule, rightAscension, declination, threshold, bitmask, min
         extractedObs = [x for x in extractedObs if nightInterval[night - 1][0] <= x[0] <= nightInterval[night - 1][1]]
     print(f'{len(extractedObs)} observations of the target were extracted')
     lightCurve = [x for x in extractedObs if 0 < x[1] < 99]
+    lightCurve.sort()
     print(f'{len(lightCurve)} total observations in target\'s light curve after {len(extractedObs) - len(lightCurve)} unphysical observations were removed')
     if verbose:
         print_lightcurve(lightCurve, xerror, False)
@@ -376,6 +377,10 @@ def main(fileDir, schedule, rightAscension, declination, threshold, bitmask, min
         if x[2] < minUncertainty:
             x[2] = minUncertainty
     filtLightCurve, averaged, unconfirmed, inconsistent = unconex(lightCurve, schedule, threshold, xerror)
+    filtLightCurve.sort()
+    averaged.sort()
+    unconfirmed.sort()
+    inconsistent.sort()
     if verbose:
         print_lightcurve(filtLightCurve, xerror, True)
     if plot or picklePlot:

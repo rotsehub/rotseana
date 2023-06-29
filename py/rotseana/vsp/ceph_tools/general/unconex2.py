@@ -75,6 +75,7 @@ def get_data(refra, refdec, match):
     cond = np.logical_and.reduce((np.abs(match_ra-refra) < 0.001, np.abs(match_dec-refdec) < 0.001))
     goodobj = np.where(cond)
     objid = goodobj[0]
+    # test edit
     match_m_lim = match['STAT'][0]['M_LIM']
     match_obstime = match['STAT'][0]['OBSTIME'] ## gets the observation times
     match_exptime = match.field('EXPTIME')[0]

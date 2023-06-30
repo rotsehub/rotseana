@@ -6,8 +6,6 @@ Created on Jul 22, 2017
 '''
 import logging
 import numpy as np
-
-
 from rotseana.findburst.read_data_file import read_data_file, get_data_file_rotse
 from rotseana.findburst.filter_obs import filter_obs
 from rotseana.findburst.lcplot2 import lcplot2
@@ -17,7 +15,6 @@ from rotseana.findburst.calc_masks import calc_masks
 from rotseana.findburst.calc_var import calc_var
 
 logger = logging.getLevelName(__name__)
-
 
 def find_burst(match, mindelta, minsig, fits_index=1, minchisq=None, refra=None, refdec=None, radius=None, objid=None, rotse=None, log=None, emask=None, rmask=None, recoverable=False, recover=False, recdir=None, verbose=False):
     '''
@@ -42,8 +39,9 @@ def find_burst(match, mindelta, minsig, fits_index=1, minchisq=None, refra=None,
     ; PROCEDURE:    Searches for brief optical transients in a matched object
     ;        list from ROTSE trigger response data.
     ;
-    ; Adopted from define_flags.pro idl procedure
-    ; Created:  Jul 8, 2017  Daniel Sela, Arnon sela
+    ; Based on find_burst.pro IDL procedure
+    ; Created:  4/23/99-12/07/00  Bob Kehoe
+    ; Adopted to Python:  Jul 8, 2017  Daniel Sela, Arnon sela
     ;******************************************************************************
 
     '''
@@ -53,13 +51,14 @@ def find_burst(match, mindelta, minsig, fits_index=1, minchisq=None, refra=None,
         match_file = match
         # match=readsav(match)['match']
         match, tele = read_data_file(match_file, fits_index)
-
         if not rotse:
             rotse = get_data_file_rotse(match_file)
 
+    print("step 1")
     match_m = match.field('M')[0]
     nobj = match_m.shape[0]
     totobs = match_m.shape[1]
+    print(nobj, totobs)
     if verbose:
         print('Total number of objects found in ', totobs, ' epochs = ', nobj)
 
@@ -67,7 +66,8 @@ def find_burst(match, mindelta, minsig, fits_index=1, minchisq=None, refra=None,
         radius = 0.001  # - radius from given ra, dec
 
     emask, rmask = calc_masks(emask, rmask)
-
+    print(emask, rmask)
+    
     # see if can restore filter_obs
     goodobj_rec = None
     goodobj = None

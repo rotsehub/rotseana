@@ -56,30 +56,47 @@ Programs
 find_burst
 ==========
 
-creates a PDF file instead of a postscript of all the stars within the designated file. The file types supported are .datc, .dat, and .fit.
+This program analyzes a match structure of lightcurves from ROTSE-I or ROTSE-III telescopes and extracts objects according to three types of quantity.  Selection by statistical quantities select varying objects in the field of view.  Selection by object ID # in the structure identifies specific objects of interest.  Alternatively, celestial coordinates and a radius can be used to select all objects in a portion of a match structure.  Find_burst provides the option to create a PDF file of all stars satisfying the selection applied.  The file types supported are .datc, .dat, and .fit.
 
 Parameters
 ----------
 
+-h         help for find_burst
+--file, -f  File with match structure
 --mindelta  Minimum delta
 --minsig    Minimum sigma
 --minchisq  Minimum chisq
---log       Saves the output under name.log. The .log must be .pdf.
+--objid     Processes a specific objid
+--refra     Reference RA (decimal deg.) for coordinate selection
+--refdec    Reference Dec (decimal deg.) for coordinate slection
+--radius    Radius of circle bounding coordinate selection
+--log       Saves the output under <name provided>.pdf
 
 To run
 ------
 
 .. code::
 
-    find_burst --mindelta VALUE --minsig VALUE --minchisq VALUE  --log name.log -f FILE
+   Variability selection:
+    $ find_burst -f FILE --mindelta VALUE --minsig VALUE --minchisq VALUE  --log NAME
 
+   Object selection:
+    $ find_burst -f FILE --objid NUMBER --log NAME
+
+   Coordinate selection:
+    $ find_burst -f FILE --refra VALUE --refdec VALUE --radius VALUE --log NAME
+    
 Example
 -------
 
 .. code::
 
-    find_burst --mindelta 0.1 --minsig 1.0 --minchisq 2.0 --log sky1.pdf -f ../000906_sky0001_1c_match.datc
+    $ find_burst -f 130904_vsp2218+4034_3b_match.fit --mindelta 0.1 --minsig 3.0 --minchisq 2.0 --log sky1
 
+    $ find_burst -f 130904_vsp2218+4034_3b_match.fit --objid 4447 --log sky2
+
+    $ find_burst -f 130904_vsp2218+4034_3b_match.fit --refra 335.04050 --refdec 41.34516 --radius 0.001 --log fb4
+    
 For more information run find_burst -h (or --help)
 
 findburst_gd
@@ -103,8 +120,9 @@ To run using a match structured file
 
 .. code::
 
-    findburst_gd --match FILE --mindelta VALUE --minsig VALUE --minchisq VALUE  --log name.txt
+    Variability selection:  findburst_gd --match FILE --mindelta VALUE --minsig VALUE --minchisq VALUE  --log name.txt
 
+    Object selection: find_burst
 To run using fit structured file
 --------------------------------
 

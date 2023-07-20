@@ -376,7 +376,7 @@ def lcvis( data, obj_name, period_initial ):
             if preview_plot:
                 fig2.show()
                 
-            tkinter.messagebox.showinfo(title='Figure Saved', message=f"A pickled plot of the light curve named {filename}"
+            tkinter.messagebox.showinfo(title='Figure Saved', message=f"A pickle plot of the light curve named {filename}"
                                         + f" has been saved in {cwd}"
                                         + "\n\n" + "Plot cannot be changed when opening with unpickle.py")
             plt.figure(fig.number)

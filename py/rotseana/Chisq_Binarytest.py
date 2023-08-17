@@ -15,13 +15,9 @@ def collect(filename):
 
 def collecttable(filename):
     lightcurve= np.genfromtxt(filename, dtype=None,delimiter=None,skip_header=2,names=["phase","mag","error"])
-    print(lightcurve)
-    print(lightcurve["phase"][0])
-    print(lightcurve["mag"])
-    print(lightcurve["error"])
     return lightcurve
 
-def Min1(sorted_lc,num):
+def getlowestMag(sorted_lc,num):
     x=range(num)
     Mag=[]
     Phase=[]
@@ -38,9 +34,8 @@ def getMedian(Mag,Phase):
     PhaseMedian = statistics.median(Phase)
     return MagMedian, PhaseMedian
 
-def tunedMin2(Mag,Phase,Error,PhaseMedian,num):
+def getwindowMin(Mag,Phase,Error,PhaseMedian,num):
     k=range(num)
-    print(PhaseMedian)
     abs_dif=[]
     for i in k:
         abs_dif.append(abs(Phase[i] - PhaseMedian))
@@ -74,6 +69,9 @@ def difference(Phase,PhaseMedian,num):
     
 def objective(x, a, b, c):
     return a*(x-b)**2 + c
+
+def parabala2(c):
+    return c
 
 def fitminimum(Mag,Phase, a, b, c):
     params, _ = curve_fit(objective, Phase, Mag)
@@ -171,7 +169,7 @@ print(lightcurve)
 print('lightcurve')
 sorted_lc= sorted(lightcurve, key=itemgetter(1))
 print("sorted lc ",sorted_lc)
-Mag, Phase,Error=Min1(sorted_lc,20)
+Mag, Phase,Error=getlowestMag(sorted_lc,20)
 print("y=",Mag)
 print("x=",Phase)
 MagMedian, PhaseMedian = getMedian(Mag,Phase)
@@ -187,26 +185,18 @@ print(Mag)
 print(Phase)
 params_Min1 = fitminimum(Mag, Phase, a, PhaseMedian, MagMedian)
 a,b,c = params_Min1
+print('first fitMinimum:')
 print('y= %.5f *(x-%.5f)**2 + %.5f' %(a,b,c))
 Phase_wind,Mag_wind,Error_wind = getwindow(lightcurve,b,0.05)
 ####### End of First Minimum Finding  ############
 
-#Chisq= calcchisq(Phase_wind,Mag_wind,Error_wind,a,b,c)
-#print('MU=', mu)
-#total_sum= np.sum(mu)
-#print('Total Sum=',total_sum)
-#print('Calc sum=',calc_sum)
-#total_calc= np.sum(calc_sum)
-#finished_calc= total_calc/length_wind-3
-#print('Total calc=',total_calc)
-#print('Finished calc=',finished_calc)
 guessPhase = [] 
 if b >1.5:
     guessPhase.append(b -0.5)
 else:
     guessPhase.append(b+0.5)
-Mag2,Phase2,Error2= Min1(sorted_lc,99)
-tunedPhase2,tunedMag2,tunedError= tunedMin2(Mag2,Phase2,Error2,guessPhase,99)
+Mag2,Phase2,Error2= getlowestMag(sorted_lc,99)
+tunedPhase2,tunedMag2,tunedError= getwindowMin(Mag2,Phase2,Error2,guessPhase,99)
 print(tunedPhase2)
 print(tunedMag2)
 print(guessPhase)
@@ -215,14 +205,15 @@ MagMedian2 = statistics.median(tunedMag2)
 params_Min2 = fitminimum(tunedMag2, tunedPhase2, a, guessPhase,MagMedian2)
 a_prime,b_prime,c_prime = params_Min2
 Phase_windprime,Mag_windprime,Error_windprime=getwindow(lightcurve,b_prime,0.05)
+print('Second Minimum:')
 print('y= %.5f *(x-%.5f)**2 + %.5f' %(a_prime,b_prime,c_prime))
 ######## End of Second Minimum Finding ###############
 
 Chisq11=calcchisq(Phase_wind,Mag_wind,Error_wind,a,b,c)
+print('First Min Chisq=',Chisq11)
 Chisq22=calcchisq(Phase_windprime,Mag_windprime,Error_windprime,a_prime,b_prime,c_prime)
+print('Second Min Chisq=',Chisq22) 
 Chisq12=calcchisq(Phase_windprime,Mag_windprime,Error_windprime,a,b_prime,c)
+print('Second Min data & first fitminimum=',Chisq12)
 Chisq21=calcchisq(Phase_wind,Mag_wind,Error_wind,a_prime,b,c_prime)
-print(Chisq11)
-print(Chisq22)
-print(Chisq12)
-print(Chisq21)
+print('First min data & Second fitminimum=',Chisq21)

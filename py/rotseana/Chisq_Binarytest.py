@@ -50,19 +50,14 @@ def getwindowMin(Mag,Phase,Error,PhaseMedian,num):
             tunedError.append(Error[i])
     return tunedPhase,tunedMag,tunedError
              
-def difference(Phase,PhaseMedian,num):
+def getdifMin(Phase,PhaseMedian,num):
     j=range(num)
-   # dif=[]
     abs_num=[]
     for i in j:
-      # dif.append(PhaseMedian - Phase[j])
         abs_num.append(abs(Phase[i] - PhaseMedian))
-       # print("a_n", abs_num)
     k=range(num)
-    #print("A", abs_num)
     ilist=[]
     for i in k:     
-        #print("i_a", abs_num[i])
         if abs_num[i] > 0.2:
             ilist.append(i)
     return ilist
@@ -89,7 +84,6 @@ def getwindow(lightcurve,PhaseMedian,num):
     j =range(length_light)   
     for i in j:
         abs_dif = abs(lightcurve[i][0] - PhaseMedian)
-       # print('abs_dif=', abs_dif, lightcurve[i][0])       
         if abs_dif <= num:
             Phase_wind.append(lightcurve[i][0])
             Mag_wind.append(lightcurve[i][1])
@@ -100,13 +94,10 @@ def calcchisq(Phase_wind,Mag_wind,Error_wind,a,b,c):
     mu = []
     calc_sum=[]
     length_wind = len(Phase_wind)
-   # print('l_w=', length_wind,a,b,c)
     k= range(length_wind)
     for i in k:
-      #  mu = objective(lc_wind[i],a,b,c)
         mu.append(objective(Phase_wind[i],a,b,c))
         calc_sum.append(((Mag_wind[i]-mu[i])/Error_wind[i])**2)
-       # print('Mu=',mu[i],'Calc Sum=', calc_sum[i])
     total_calc = np.sum(calc_sum)    
     Chisq = total_calc/length_wind-3
     return Chisq
@@ -129,17 +120,12 @@ def getMean(guessPhase,Mag,Error,Phase):
     x =  range(n_bin)
     for i in x:
         phase_bin.append(wind_Max + 1/2 * binsize + i * binsize)
-       # print('Phase_bin',phase_bin[i])
         length = len(Phase)
         k = range(length)
         avgfirst=[]
         avgsecond=[]
         Error_final=[]
-        #print('phase',Phase)
-        #print('length', length)
-        #print('K',k)
         for j in k:
-            #print('J',j)
             mag_final=[]
             minus_cond = phase_bin-binsize/2
             plus_cond = phase_bin+binsize/2
@@ -173,7 +159,7 @@ Mag, Phase,Error=getlowestMag(sorted_lc,20)
 print("y=",Mag)
 print("x=",Phase)
 MagMedian, PhaseMedian = getMedian(Mag,Phase)
-ilist = difference(Phase,PhaseMedian,20)
+ilist = getdifMin(Phase,PhaseMedian,20)
 print(ilist)
 print("M=",MagMedian)
 print("P=",PhaseMedian)

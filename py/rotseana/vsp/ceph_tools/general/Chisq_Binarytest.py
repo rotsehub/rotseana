@@ -155,31 +155,33 @@ def getMean(guessPhase,Mag,Error,Phase):
     return Mean_Mag
 
     ############# Start of setup of array#################
-a=0.6666666
-lightcurve = collecttable('J1125+4234_b2.txt')
-sorted_lc= sorted(lightcurve, key=itemgetter(1))
-Lightcurve_len = len(lightcurve)
+def ExLightfile(file):
+    a=0.6666666
+    lightcurve = collecttable(file)
+    sorted_lc= sorted(lightcurve, key=itemgetter(1))
+    Lightcurve_len = len(lightcurve)
+return lightcurve, sorted_lc,a
 #########End of Setup of array ##########
 
 ########Start of Firt minimum finding#############
-Mag, Phase,Error=getlowestMag(sorted_lc,20)
-MagMedian, PhaseMedian = getMedian(Mag,Phase)
-removei = difference(Phase,PhaseMedian,20)
-for i in removei:
-     Mag.pop(removei[i])
-     Phase.pop(removei[i])
-     Error.pop(removei[i])
-print(Mag)
-print(Phase)
-params_Min1 = fitminimum(Mag, Phase, a, PhaseMedian, MagMedian)
-a,b,c = params_Min1
-FittedPhase1 = b
-FittedMag1 = c
-# write FittedPhase1 = b
-# assign c to FittedMag1
-print('first fitMinimum:')
-print('y= %.5f *(x-%.5f)**2 + %.5f' %(a,FittedPhase1,FittedMag1))
-Phase_wind,Mag_wind,Error_wind = getwindow(lightcurve,FittedPhase1,0.05)
+def getFirstmin(sorted_lc):
+    Mag, Phase,Error=getlowestMag(sorted_lc,20)
+    MagMedian, PhaseMedian = getMedian(Mag,Phase)
+    removei = difference(Phase,PhaseMedian,20)
+    for i in removei:
+         Mag.pop(removei[i])
+         Phase.pop(removei[i])
+         Error.pop(removei[i])
+    print(Mag)
+    print(Phase)
+    params_Min1 = fitminimum(Mag, Phase, a, PhaseMedian, MagMedian)
+    a,b,c = params_Min1
+    FittedPhase1 = b
+    FittedMag1 = c
+    print('first fitMinimum:')
+    print('y= %.5f *(x-%.5f)**2 + %.5f' %(a,FittedPhase1,FittedMag1))
+    Phase_wind,Mag_wind,Error_wind = getwindow(lightcurve,FittedPhase1,0.05)
+return FittedPhase1, FittedMag1
 ####### End of First Minimum Finding  ############
 
 ####### Start of the Second Minimum finding ########

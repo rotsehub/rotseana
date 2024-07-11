@@ -160,7 +160,7 @@ def ExLightfile(file):
     lightcurve = collecttable(file)
     sorted_lc= sorted(lightcurve, key=itemgetter(1))
     Lightcurve_len = len(lightcurve)
-return lightcurve, sorted_lc,a
+    return lightcurve, sorted_lc,a
 #########End of Setup of array ##########
 lightcurve, sorted_lc,a = Exlightfile('J1125+4234_b2.txt')
 
@@ -182,7 +182,7 @@ def getFirstmin(sorted_lc):
     print('first fitMinimum:')
     print('y= %.5f *(x-%.5f)**2 + %.5f' %(a,FittedPhase1,FittedMag1))
     Phase_wind,Mag_wind,Error_wind = getwindow(lightcurve,FittedPhase1,0.05)
-return FittedPhase1, FittedMag1
+    return FittedPhase1, FittedMag1
 ####### End of First Minimum Finding  ############
 FittedPhase1, FittedMag1 = getFirstmin(sorted_lc)
 

@@ -155,18 +155,15 @@ def getMean(guessPhase,Mag,Error,Phase):
     return Mean_Mag
 
     ############# Start of setup of array#################
-def ExLightfile(file):
+def exlightfile(filename):
     a=0.6666666
-    lightcurve = collecttable(file)
+    lightcurve = collecttable(filename)
     sorted_lc= sorted(lightcurve, key=itemgetter(1))
-    Lightcurve_len = len(lightcurve)
-    return lightcurve, sorted_lc,a
-#########End of Setup of array ##########
-lightcurve, sorted_lc,a = Exlightfile('J1125+4234_b2.txt')
+    return lightcurve, sorted_lc
+#########Reads in lightcurve file and sorts it by Magnitude##########
 
-########Start of Firt minimum finding#############
-def getFirstmin(sorted_lc):
-    Mag, Phase,Error=getlowestMag(sorted_lc,20)
+def getfirstMin(nfile): 
+    Mag, Phase,Error=getlowestMag(nfile,20)
     MagMedian, PhaseMedian = getMedian(Mag,Phase)
     removei = difference(Phase,PhaseMedian,20)
     for i in removei:
@@ -175,6 +172,7 @@ def getFirstmin(sorted_lc):
          Error.pop(removei[i])
     print(Mag)
     print(Phase)
+    a=0.6666666
     params_Min1 = fitminimum(Mag, Phase, a, PhaseMedian, MagMedian)
     a,b,c = params_Min1
     FittedPhase1 = b
@@ -182,49 +180,57 @@ def getFirstmin(sorted_lc):
     print('first fitMinimum:')
     print('y= %.5f *(x-%.5f)**2 + %.5f' %(a,FittedPhase1,FittedMag1))
     Phase_wind,Mag_wind,Error_wind = getwindow(lightcurve,FittedPhase1,0.05)
-    return FittedPhase1, FittedMag1
-####### End of First Minimum Finding  ############
-FittedPhase1, FittedMag1 = getFirstmin(sorted_lc)
+    return FittedPhase1, FittedMag1, Phase_wind, Mag_wind, Error_wind, a
+####### Takes the sorted lightcurve and finds the Phase Mag Error and the parabola of it  ############
 
-####### Start of the Second Minimum finding ########
-guessPhase = [] 
-if FittedPhase1 >1.5:
-    guessPhase.append(FittedPhase1 -0.6)
-else:
-    guessPhase.append(FittedPhase1+0.6)
-print("GuessPhase=",guessPhase)
-Mag2,Phase2,Error2= getlowestMag(sorted_lc,Lightcurve_len)
-Phase2_len = len(Phase2)
-if Lightcurve_len > 500:
-    Lightcurve_len = 500
+def getsecMin(lightcurve,FittedPhase1,sorted_lc, a):
+    guessPhase = [] 
+    if FittedPhase1 >1.5:
+        guessPhase.append(FittedPhase1 -0.6)
+    else:
+        guessPhase.append(FittedPhase1+0.6)
+    print("GuessPhase=",guessPhase)
+    Lightcurve_len = len(lightcurve)
+    Mag2,Phase2,Error2= getlowestMag(sorted_lc,Lightcurve_len)
+    Phase2_len = len(Phase2)
+    if Lightcurve_len > 500:
+        Lightcurve_len = 500
+    savei = difference2(Phase2,guessPhase,Lightcurve_len)
+    savei_len = len(savei)
+    l=range(savei_len-1)
+    Phase3 = []
+    Mag3 = []
+    Error3 = []
+    for i in l:
+        Phase3.append(Phase2[savei[i]])
+        Mag3.append(Mag2[savei[i]])
+        Error3.append(Error2[savei[i]])
+    Phase3_len = len(Phase3)
+    Mag3_len = len(Mag3)
+    MagMedian2 = statistics.median(Mag3)
+    PhaseMedian2 = statistics.median(Phase3)
+    print(a)
+    params_Min2 = fitminimum(Mag3, Phase3, a, PhaseMedian2,MagMedian2)
+    a_prime,b_prime,c_prime = params_Min2
+    Phase_windprime,Mag_windprime,Error_windprime=getwindow(lightcurve,b_prime,0.05)
+    print('Second Minimum:')
+    print('y= %.5f *(x-%.5f)**2 + %.5f' %(a_prime,b_prime,c_prime))
+    return Phase_windprime, Mag_windprime, Error_windprime, a_prime, b_prime, c_prime 
+######## Uses the a fit of the first Minima and finds the different parabola and Mag Phase aand Median ###############
 
-savei = difference2(Phase2,guessPhase,Lightcurve_len)
-savei_len = len(savei)
-l=range(savei_len-1)
-Phase3 = []
-Mag3 = []
-Error3 = []
-for i in l:
-    Phase3.append(Phase2[savei[i]])
-    Mag3.append(Mag2[savei[i]])
-    Error3.append(Error2[savei[i]])
-Phase3_len = len(Phase3)
-Mag3_len = len(Mag3)
+def difresult(Phase_windprime, Mag_windprime, Error_windprime, a_prime, b_prime, c_prime,FittedMag1,a,FittedPhase1,Mag_wind,Error_wind, Phase_wind):
+    Chisq11=calcchisq(Phase_wind,Mag_wind,Error_wind,a,FittedPhase1,FittedMag1)
+    print('First Min Chisq=',Chisq11)
+    Chisq22=calcchisq(Phase_windprime,Mag_windprime,Error_windprime,a_prime,b_prime,c_prime)
+    print('Second Min Chisq=',Chisq22) 
+    Chisq12=calcchisq(Phase_windprime,Mag_windprime,Error_windprime,a,b_prime,FittedMag1)
+    print('Second Min data & first fitminimum=',Chisq12)
+    Chisq21=calcchisq(Phase_wind,Mag_wind,Error_wind,a_prime,FittedPhase1,c_prime)
+    print('First min data & Second fitminimum=',Chisq21)
+    return Chisq11, Chisq22, Chisq12, Chisq21
+######### Uses the data found from the first & second Minima to discover the difference and wether the lightcurve file is a binary or pulsating variable##########
 
-MagMedian2 = statistics.median(Mag3)
-PhaseMedian2 = statistics.median(Phase3)
-params_Min2 = fitminimum(Mag3, Phase3, a, PhaseMedian2,MagMedian2)
-a_prime,b_prime,c_prime = params_Min2
-Phase_windprime,Mag_windprime,Error_windprime=getwindow(lightcurve,b_prime,0.05)
-print('Second Minimum:')
-print('y= %.5f *(x-%.5f)**2 + %.5f' %(a_prime,b_prime,c_prime))
-######## End of Second Minimum Finding ###############
-
-Chisq11=calcchisq(Phase_wind,Mag_wind,Error_wind,a,FittedPhase1,FittedMag1)
-print('First Min Chisq=',Chisq11)
-Chisq22=calcchisq(Phase_windprime,Mag_windprime,Error_windprime,a_prime,b_prime,c_prime)
-print('Second Min Chisq=',Chisq22) 
-Chisq12=calcchisq(Phase_windprime,Mag_windprime,Error_windprime,a,b_prime,FittedMag1)
-print('Second Min data & first fitminimum=',Chisq12)
-Chisq21=calcchisq(Phase_wind,Mag_wind,Error_wind,a_prime,FittedPhase1,c_prime)
-print('First min data & Second fitminimum=',Chisq21)
+lightcurve, sorted_lc = exlightfile("J1125+4234_b2.txt")
+FittedPhase1, FittedMag1, Phase_wind, Mag_wind, Error_wind, a = getfirstMin(sorted_lc)
+Phase_windprime, Mag_windprime, Error_windprime, a_prime, b_prime, c_prime = getsecMin(lightcurve,FittedPhase1, sorted_lc,a)
+Chisq11, Chisq22, Chisq12, Chisq21 = difresult(Phase_windprime, Mag_windprime, Error_windprime, a_prime, b_prime, c_prime, FittedMag1, a, FittedPhase1, Mag_wind, Error_wind,Phase_wind)

@@ -1,8 +1,8 @@
 # fit a straight line to the economic data
-from numpy import arange
-from pandas import read_table
+#from numpy import arange
+#from pandas import read_table
 from scipy.optimize import curve_fit
-from matplotlib import pyplot
+#from matplotlib import pyplot
 from operator import itemgetter
 import numpy as np 
 import statistics
@@ -12,11 +12,11 @@ def collect(filename):
     for a_line in in_file:
         print(a_line)
     return in_file
-
+#### reads in file that is given returns it to use in the code####
 def collecttable(filename):
     lightcurve= np.genfromtxt(filename, dtype=None,delimiter=None,skip_header=2,names=["phase","mag","error"])
     return lightcurve
-
+###sorts through the file and separates each line into order through the mag and separates it into pahse mag and Error###
 def getlowestMag(sorted_lc,num):
     x=range(num)
     Mag=[]
@@ -27,12 +27,12 @@ def getlowestMag(sorted_lc,num):
        Phase.append(sorted_lc[len(sorted_lc) -2*i-1][0])
        Error.append(sorted_lc[len(sorted_lc) -2*i-1][2])
     return Mag,Phase,Error
-
+###sorts through the array lightcurve and skips over the dupilcate lines and puts each into separate lines###
 def getMedian(Mag,Phase):
     MagMedian = statistics.median(Mag)
     PhaseMedian = statistics.median(Phase)
     return MagMedian, PhaseMedian
-
+### finds the meidan of Phase and Mag in the lightcurve file to help find the points around the first parabola###
 def getwindowMin(Mag,Phase,Error,PhaseMedian,num):
     k=range(num)
     abs_dif=[]
@@ -48,7 +48,7 @@ def getwindowMin(Mag,Phase,Error,PhaseMedian,num):
             tunedMag.append(Mag[i])
             tunedError.append(Error[i])
     return tunedPhase,tunedMag,tunedError
-             
+#gets the points around the first parabola for each Phase Mag and Error using the difference between the each Phase point and the Median#              
 def difference(Phase,PhaseMedian,num):
     j=range(num)
     removei=[]
@@ -57,7 +57,7 @@ def difference(Phase,PhaseMedian,num):
         if diff > 0.2:
             removei.append(i)
     return removei
-
+#does the same thing as getWindow Min#
 def difference2(Phase,Phasemedian,num):
     j=range(num)
     savei=[]
@@ -70,16 +70,17 @@ def difference2(Phase,Phasemedian,num):
     
 def objective(x, a, b, c):
     return a*(x-b)**2 + c
-
-def parabala2(c):
-    return c
+#creates the parbola for each Minima#
+#def parabala2(c):
+ #   return c
 
 def fitminimum(Mag,Phase, a, b, c):
     params, _ = curve_fit(objective, Phase, Mag)
     return params
+#finds the fitminimas a b c#
 
-def fitplot(x, y, a, b, c):
-    return 
+#def fitplot(x, y, a, b, c):
+ #   return 
 
 def getwindow(lightcurve,PhaseMedian,num):
     Phase_wind=[]
@@ -95,7 +96,7 @@ def getwindow(lightcurve,PhaseMedian,num):
             Mag_wind.append(lightcurve[i][1])
             Error_wind.append(lightcurve[i][2])
     return Phase_wind,Mag_wind,Error_wind
-
+#gets the second lightcurves minima for the Phase Mag and Errors#
 def calcchisq(Phase_wind,Mag_wind,Error_wind,a,b,c):
     mu = []
     calc_sum=[]
@@ -107,7 +108,7 @@ def calcchisq(Phase_wind,Mag_wind,Error_wind,a,b,c):
     total_calc = np.sum(calc_sum)    
     Chisq = total_calc/length_wind-3
     return Chisq
-
+#calculates the Chisq for each Minima which is the result of the package# 
 def getMean(guessPhase,Mag,Error,Phase):
     n_bin = 6
     print('n_bin',n_bin)   
@@ -153,7 +154,7 @@ def getMean(guessPhase,Mag,Error,Phase):
         Erroravg.append(np.sum(Error_final))
         print('Erroravg',Erroravg)
     return Mean_Mag
-
+#i
     ############# Start of setup of array#################
 def exlightfile(filename):
     a=0.6666666

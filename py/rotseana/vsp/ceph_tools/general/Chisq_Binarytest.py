@@ -6,16 +6,19 @@ import statistics
 # define the methods
 
 def collect(filename):
+#### reads in file that is given returns it to use in the code####
     in_file = open(filename,'r')
     for a_line in in_file:
         print(a_line)
     return in_file
-#### reads in file that is given returns it to use in the code####
+
 def collecttable(filename):
+###sorts through the file and separates each line into order through the mag and separates it into pahse mag and Error###
     lightcurve= np.genfromtxt(filename, dtype=None,delimiter=None,skip_header=2,names=["phase","mag","error"])
     return lightcurve
-###sorts through the file and separates each line into order through the mag and separates it into pahse mag and Error###
+
 def getlowestMag(sorted_lc,num):
+###sorts through the array lightcurve and skips over the dupilcate lines and puts each into separate lines###
     x=range(num)
     Mag=[]
     Phase=[]
@@ -25,13 +28,15 @@ def getlowestMag(sorted_lc,num):
        Phase.append(sorted_lc[len(sorted_lc) -2*i-1][0])
        Error.append(sorted_lc[len(sorted_lc) -2*i-1][2])
     return Mag,Phase,Error
-###sorts through the array lightcurve and skips over the dupilcate lines and puts each into separate lines###
+
 def getMedian(Mag,Phase):
+### finds the meidan of Phase and Mag in the lightcurve file to help find the points around the first parabola###
     MagMedian = statistics.median(Mag)
     PhaseMedian = statistics.median(Phase)
     return MagMedian, PhaseMedian
-### finds the meidan of Phase and Mag in the lightcurve file to help find the points around the first parabola###
+
 def getwindowMin(Mag,Phase,Error,PhaseMedian,num):
+#gets the points around the first parabola for each Phase Mag and Error using the difference between the each Phase point and the Median#              
     k=range(num)
     abs_dif=[]
     for i in k:
@@ -46,8 +51,9 @@ def getwindowMin(Mag,Phase,Error,PhaseMedian,num):
             tunedMag.append(Mag[i])
             tunedError.append(Error[i])
     return tunedPhase,tunedMag,tunedError
-#gets the points around the first parabola for each Phase Mag and Error using the difference between the each Phase point and the Median#              
+
 def difference(Phase,PhaseMedian,num):
+#does the same thing as getWindow Min#
     j=range(num)
     removei=[]
     for i in j:
@@ -55,7 +61,7 @@ def difference(Phase,PhaseMedian,num):
         if diff > 0.2:
             removei.append(i)
     return removei
-#does the same thing as getWindow Min#
+
 def difference2(Phase,Phasemedian,num):
     j=range(num)
     savei=[]
@@ -66,21 +72,19 @@ def difference2(Phase,Phasemedian,num):
             savei.append(i)
     return savei
     
+
 def objective(x, a, b, c):
-    return a*(x-b)**2 + c
 #creates the parbola for each Minima#
-#def parabala2(c):
- #   return c
+    return a*(x-b)**2 + c
 
 def fitminimum(Mag,Phase, a, b, c):
+#finds the fitminimas a b c#
     params, _ = curve_fit(objective, Phase, Mag)
     return params
-#finds the fitminimas a b c#
 
-#def fitplot(x, y, a, b, c):
- #   return 
 
 def getwindow(lightcurve,PhaseMedian,num):
+#gets the second lightcurves minima for the Phase Mag and Errors#
     Phase_wind=[]
     Mag_wind=[]
     Error_wind=[]
@@ -94,8 +98,9 @@ def getwindow(lightcurve,PhaseMedian,num):
             Mag_wind.append(lightcurve[i][1])
             Error_wind.append(lightcurve[i][2])
     return Phase_wind,Mag_wind,Error_wind
-#gets the second lightcurves minima for the Phase Mag and Errors#
+
 def calcchisq(Phase_wind,Mag_wind,Error_wind,a,b,c):
+#calculates the Chisq for each Minima which is the result of the package# 
     mu = []
     calc_sum=[]
     length_wind = len(Phase_wind)
@@ -106,7 +111,7 @@ def calcchisq(Phase_wind,Mag_wind,Error_wind,a,b,c):
     total_calc = np.sum(calc_sum)    
     Chisq = total_calc/length_wind-3
     return Chisq
-#calculates the Chisq for each Minima which is the result of the package# 
+
 def getMean(guessPhase,Mag,Error,Phase):
     n_bin = 6
     print('n_bin',n_bin)   
@@ -152,17 +157,19 @@ def getMean(guessPhase,Mag,Error,Phase):
         Erroravg.append(np.sum(Error_final))
         print('Erroravg',Erroravg)
     return Mean_Mag
-#i
+
     ############# Start of setup of array#################
+
 def exlightfile(filename):
+#########Reads in lightcurve file and sorts it by Magnitude##########
     a=0.6666666
     lightcurve = collecttable(filename)
     sorted_lc= sorted(lightcurve, key=itemgetter(1))
     return lightcurve, sorted_lc
-#########Reads in lightcurve file and sorts it by Magnitude##########
 
-def getfirstMin(nfile): 
-    Mag, Phase,Error=getlowestMag(nfile,20)
+def getfirstMin(sorted_lc): 
+####### Takes the sorted lightcurve and finds the Phase Mag Error and the parabola of it  ############
+    Mag, Phase,Error=getlowestMag(sorted_lc,20)
     MagMedian, PhaseMedian = getMedian(Mag,Phase)
     removei = difference(Phase,PhaseMedian,20)
     for i in removei:
@@ -180,9 +187,9 @@ def getfirstMin(nfile):
     print('y= %.5f *(x-%.5f)**2 + %.5f' %(a,FittedPhase1,FittedMag1))
     Phase_wind,Mag_wind,Error_wind = getwindow(lightcurve,FittedPhase1,0.05)
     return FittedPhase1, FittedMag1, Phase_wind, Mag_wind, Error_wind, a
-####### Takes the sorted lightcurve and finds the Phase Mag Error and the parabola of it  ############
 
 def getsecMin(lightcurve,FittedPhase1,sorted_lc, a):
+######## Uses the a fit of the first Minima and finds the different parabola and Mag Phase aand Median ###############
     guessPhase = [] 
     if FittedPhase1 >1.5:
         guessPhase.append(FittedPhase1 -0.6)
@@ -215,9 +222,9 @@ def getsecMin(lightcurve,FittedPhase1,sorted_lc, a):
     print('Second Minimum:')
     print('y= %.5f *(x-%.5f)**2 + %.5f' %(a_prime,b_prime,c_prime))
     return Phase_windprime, Mag_windprime, Error_windprime, a_prime, b_prime, c_prime 
-######## Uses the a fit of the first Minima and finds the different parabola and Mag Phase aand Median ###############
 
 def difresult(Phase_windprime, Mag_windprime, Error_windprime, a_prime, b_prime, c_prime,FittedMag1,a,FittedPhase1,Mag_wind,Error_wind, Phase_wind):
+######### Uses the data found from the first & second Minima to discover the difference and wether the lightcurve file is a binary or pulsating variable##########
     Chisq11=calcchisq(Phase_wind,Mag_wind,Error_wind,a,FittedPhase1,FittedMag1)
     print('First Min Chisq=',Chisq11)
     Chisq22=calcchisq(Phase_windprime,Mag_windprime,Error_windprime,a_prime,b_prime,c_prime)
@@ -227,7 +234,6 @@ def difresult(Phase_windprime, Mag_windprime, Error_windprime, a_prime, b_prime,
     Chisq21=calcchisq(Phase_wind,Mag_wind,Error_wind,a_prime,FittedPhase1,c_prime)
     print('First min data & Second fitminimum=',Chisq21)
     return Chisq11, Chisq22, Chisq12, Chisq21
-######### Uses the data found from the first & second Minima to discover the difference and wether the lightcurve file is a binary or pulsating variable##########
 
 def MainFunc(data):
     lightcurve, sorted_lc = exlightfile(data)
@@ -235,6 +241,7 @@ def MainFunc(data):
     Phase_windprime, Mag_windprime, Error_windprime, a_prime, b_prime, c_prime = getsecMin(lightcurve,FittedPhase1, sorted_lc,a)
     Chisq11, Chisq22, Chisq12, Chisq21 = difresult(Phase_windprime, Mag_windprime, Error_windprime, a_prime, b_prime, c_prime, FittedMag1, a, FittedPhase1, Mag_wind, Error_wind,Phase_wind)
     return
+
 import argparse
 import numpy as np
 parser = argparse.ArgumentParser()

@@ -160,14 +160,14 @@ def getMean(guessPhase,Mag,Error,Phase):
 
     ############# Start of setup of array#################
 
-def exlightfile(filename):
+def exlightfile(data):
 #########Reads in lightcurve file and sorts it by Magnitude##########
     a=0.6666666
-    lightcurve = collecttable(filename)
+    lightcurve = collecttable(data)
     sorted_lc= sorted(lightcurve, key=itemgetter(1))
     return lightcurve, sorted_lc
 
-def getfirstMin(sorted_lc): 
+def getfirstMin(sorted_lc,lightcurve): 
 ####### Takes the sorted lightcurve and finds the Phase Mag Error and the parabola of it  ############
     Mag, Phase,Error=getlowestMag(sorted_lc,20)
     MagMedian, PhaseMedian = getMedian(Mag,Phase)
@@ -237,7 +237,7 @@ def difresult(Phase_windprime, Mag_windprime, Error_windprime, a_prime, b_prime,
 
 def MainFunc(data):
     lightcurve, sorted_lc = exlightfile(data)
-    FittedPhase1, FittedMag1, Phase_wind, Mag_wind, Error_wind, a = getfirstMin(sorted_lc)
+    FittedPhase1, FittedMag1, Phase_wind, Mag_wind, Error_wind, a = getfirstMin(sorted_lc,lightcurve)
     Phase_windprime, Mag_windprime, Error_windprime, a_prime, b_prime, c_prime = getsecMin(lightcurve,FittedPhase1, sorted_lc,a)
     Chisq11, Chisq22, Chisq12, Chisq21 = difresult(Phase_windprime, Mag_windprime, Error_windprime, a_prime, b_prime, c_prime, FittedMag1, a, FittedPhase1, Mag_wind, Error_wind,Phase_wind)
     return
@@ -247,7 +247,7 @@ import numpy as np
 parser = argparse.ArgumentParser()
 parser.add_argument("indata",help = "Object's data file")
 args = parser.parse_args()
-indata = args.indata
+data = args.indata
 
-run = MainFunc(indata)
+run = MainFunc(data)
  

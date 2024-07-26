@@ -117,10 +117,22 @@ def lcvis( data, obj_name, period_initial ):
                 x_min2_low = x_min2_low - 1
                 x_min2_up = x_min2_up - 1
             
-            min1_l.set_xdata(x_min1_low)
-            min1_r.set_xdata(x_min1_up)
-            min2_l.set_xdata(x_min2_low)
-            min2_r.set_xdata(x_min2_up)
+            #start of bug fix
+            min1_l_x = []
+            min1_r_x = []
+            min2_l_x = []
+            min2_r_x = []
+            for i in range(len(minima_bounds)):
+                min1_l_x.append(x_min1_low)
+                min1_r_x.append(x_min1_up)
+                min2_l_x.append(x_min2_low)
+                min2_r_x.append(x_min2_up)
+            
+            min1_l.set_xdata(min1_l_x)
+            min1_r.set_xdata(min1_r_x)
+            min2_l.set_xdata(min2_l_x)
+            min2_r.set_xdata(min2_r_x)
+            #end of bug fix
             
             x_l = list()
             y_exp_l = list()
@@ -542,9 +554,8 @@ def lcvis( data, obj_name, period_initial ):
                 
         elif save_data == False:
             tkinter.messagebox.showinfo(title='Save Cancelled', message='Cancelled saving data.')
-        
-            
 
+        
 
     #FREQUENCY functions to change the frequency of the displayed sine curve and scatter, or to change to sech-sec
     def frequency_1x():

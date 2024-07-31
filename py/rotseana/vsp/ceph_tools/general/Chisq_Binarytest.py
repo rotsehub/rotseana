@@ -2,7 +2,7 @@
 from scipy.optimize import curve_fit
 from operator import itemgetter
 import numpy as np 
-import statistics
+import statistics as st
 # define the methods
 
 def collect(filename):
@@ -23,16 +23,16 @@ def getlowestMag(sorted_lc,num):
     Mag=[]
     Phase=[]
     Error=[]
-    for i in x: 
-       Mag.append(sorted_lc[len(sorted_lc) -2*i-1][1])
-       Phase.append(sorted_lc[len(sorted_lc) -2*i-1][0])
-       Error.append(sorted_lc[len(sorted_lc) -2*i-1][2])
+    for i in x:
+        Mag.append(sorted_lc[len(sorted_lc) -i-1][1])      
+        Phase.append(sorted_lc[len(sorted_lc) -i-1][0])
+        Error.append(sorted_lc[len(sorted_lc) -i-1][2])
     return Mag,Phase,Error
 
 def getMedian(Mag,Phase):
 ### finds the meidan of Phase and Mag in the lightcurve file to help find the points around the first parabola###
-    MagMedian = statistics.median(Mag)
-    PhaseMedian = statistics.median(Phase)
+    MagMedian = st.median(Mag)
+    PhaseMedian = st.median(Phase)
     return MagMedian, PhaseMedian
 
 def getwindowMin(Mag,Phase,Error,PhaseMedian,num):
@@ -65,7 +65,7 @@ def difference(Phase,PhaseMedian,num):
 def difference2(Phase,Phasemedian,num):
     j=range(num)
     savei=[]
-    print("Phasemedian",Phasemedian)
+    print("PhaseMedian", Phasemedian)
     for i in j:
         diff = abs(Phase[i] - Phasemedian)
         if diff < 0.2:
@@ -79,7 +79,11 @@ def objective(x, a, b, c):
 
 def fitminimum(Mag,Phase, a, b, c):
 #finds the fitminimas a b c#
-    params, _ = curve_fit(objective, Phase, Mag)
+    p0 = [None] * 3
+    p0[0]=a
+    p0[1]=b
+    p0[2]=c
+    params, _ = curve_fit(objective, Phase, Mag,p0)
     return params
 
 
@@ -89,7 +93,6 @@ def getwindow(lightcurve,PhaseMedian,num):
     Mag_wind=[]
     Error_wind=[]
     length_light = len(lightcurve)
-    print('L=',length_light,PhaseMedian)
     j =range(length_light)   
     for i in j:
         abs_dif = abs(lightcurve[i][0] - PhaseMedian)
@@ -114,16 +117,11 @@ def calcchisq(Phase_wind,Mag_wind,Error_wind,a,b,c):
 
 def getMean(guessPhase,Mag,Error,Phase):
     n_bin = 6
-    print('n_bin',n_bin)   
     g = np.array(guessPhase)
     wind_Min2 = 0.01
-    print('Wind_Min2',wind_Min2)    
     wind_Min = g-0.1
-    print('wind_Min',wind_Min)
     wind_Max = g + 0.1
-    print('wind_Max',wind_Max)
     binsize = (wind_Max - wind_Min)/n_bin
-    print('binsize',binsize)
     Mean_Mag = []
     Erroravg = []
     phase_bin =[0]
@@ -141,21 +139,13 @@ def getMean(guessPhase,Mag,Error,Phase):
             plus_cond = phase_bin+binsize/2
             if Phase[j] > minus_cond  and Phase[j] < plus_cond:
                 mag_final.append(Mag[j])
-                print('mag_Final',magFinal) 
                 Error_final.append(Error[j])
-                print('Error_Final',Error_final)
                 avgfirst.append( mag_final[j]/Error_final[j])
-                print('Avgfirst',avgfirst)
                 avgsecond.append(1.0/Error_final[j])
-                print('Avgsecond',avgsecond)
         first_sum = np.sum(avgfirst)
-        print('First Sum', first_sum)
         second_sum = np.sum(avgsecond)
-        print('Second_Sum',second_sum)
         Mean_Mag.append(first_sum/second_sum)        
-        print('Mean_Mag',Mean_Mag)
         Erroravg.append(np.sum(Error_final))
-        print('Erroravg',Erroravg)
     return Mean_Mag
 
     ############# Start of setup of array#################
@@ -164,11 +154,18 @@ def exlightfile(data):
 #########Reads in lightcurve file and sorts it by Magnitude##########
     a=0.6666666
     lightcurve = collecttable(data)
-    sorted_lc= sorted(lightcurve, key=itemgetter(1))
-    return lightcurve, sorted_lc
+    lightcurve_len = len(lightcurve)
+    x = range(lightcurve_len)
+    lightcurve2 = []
+    for i in x:
+        if lightcurve[i][0] <= 1.0:
+            lightcurve2.append(lightcurve[i])
+    sorted_lc= sorted(lightcurve2, key=itemgetter(1))
+    return lightcurve2, sorted_lc
 
 def getfirstMin(sorted_lc,lightcurve): 
 ####### Takes the sorted lightcurve and finds the Phase Mag Error and the parabola of it  ############
+    Sorted_lclen= len(sorted_lc)
     Mag, Phase,Error=getlowestMag(sorted_lc,20)
     MagMedian, PhaseMedian = getMedian(Mag,Phase)
     removei = difference(Phase,PhaseMedian,20)
@@ -178,7 +175,7 @@ def getfirstMin(sorted_lc,lightcurve):
          Error.pop(removei[i])
     print(Mag)
     print(Phase)
-    a=0.6666666
+    a=-50.00
     params_Min1 = fitminimum(Mag, Phase, a, PhaseMedian, MagMedian)
     a,b,c = params_Min1
     FittedPhase1 = b
@@ -213,9 +210,8 @@ def getsecMin(lightcurve,FittedPhase1,sorted_lc, a):
         Error3.append(Error2[savei[i]])
     Phase3_len = len(Phase3)
     Mag3_len = len(Mag3)
-    MagMedian2 = statistics.median(Mag3)
-    PhaseMedian2 = statistics.median(Phase3)
-    print(a)
+    MagMedian2 = st.median(Mag3)
+    PhaseMedian2 = st.median(Phase3)
     params_Min2 = fitminimum(Mag3, Phase3, a, PhaseMedian2,MagMedian2)
     a_prime,b_prime,c_prime = params_Min2
     Phase_windprime,Mag_windprime,Error_windprime=getwindow(lightcurve,b_prime,0.05)
@@ -242,9 +238,9 @@ def MainFunc(data):
     Chisq11, Chisq22, Chisq12, Chisq21 = difresult(Phase_windprime, Mag_windprime, Error_windprime, a_prime, b_prime, c_prime, FittedMag1, a, FittedPhase1, Mag_wind, Error_wind,Phase_wind)
     return
 
-import argparse
+import argparse as args
 import numpy as np
-parser = argparse.ArgumentParser()
+parser = args.ArgumentParser()
 parser.add_argument("indata",help = "Object's data file")
 args = parser.parse_args()
 data = args.indata

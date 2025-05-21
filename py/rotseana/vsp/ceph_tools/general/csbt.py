@@ -1,8 +1,17 @@
 # fit a straight line to the economic data
 from scipy.optimize import curve_fit
 from operator import itemgetter
+from scipy.optimize import fsolve
+from sympy import symbols, Eq, solve
+import matplotlib.pyplot as plt
+import matplotlib
+import argparse as args
 import numpy as np 
+import math
 import statistics as st
+import sys
+import pickle
+import os
 
 
 # define methods
@@ -15,12 +24,16 @@ def collect(filename):
     return in_file
 '''
 
+def remove_tempfile():
+    return
+
 def collect_table(data, command):
 ###generates the lightcurve ndarray###
     if command == "sp":
         lightcurve = np.genfromtxt(data, dtype = None, delimiter = None, skip_header = 2, names = ["phase", "mag", "error"])
     elif command == "lcs":
-        lightcurve = list(data)
+        import ast
+        lightcurve = ast.literal_eval(data)
     elif command == "lcf":
         lightcurve = np.loadtxt(data).tolist()
     return lightcurve
@@ -94,9 +107,12 @@ def difference2(phase, phase_median, num):
     return savei
     
 
-def objective(x, a, b, c):
+def objective_parab(x, a, b, c):
 #creates the parbola for each Minima#
-    return a*(x-b)**2 + c
+    return a * (x - b)**2 + c
+
+def objective_sine(x, a, b, c):
+    return a * (np.sin(2 * np.pi * (x - b)))**2 + c
 
 def fit_minimum(phase, mag, a, b, c):
 #finds the fitminimas a b c#
@@ -104,7 +120,15 @@ def fit_minimum(phase, mag, a, b, c):
     p0[0] = a
     p0[1] = b
     p0[2] = c
-    params, _ = curve_fit(objective, phase, mag, p0)
+    params, _ = curve_fit(objective_parab, phase, mag, p0)
+    return params
+
+def fit_maximums(phase, mag, a, b, c):
+    p0 = [None] * 3
+    p0[0] = a
+    p0[1] = b
+    p0[2] = c
+    params, _ = curve_fit(objective_sine, phase, mag, p0)
     return params
 
 def get_window(lightcurve, fitted_phase, num):
@@ -125,11 +149,21 @@ def calc_x2(phase_min, mag_min, error_min, a, b, c):
     mu = []
     calc_sum = []
     for i in range(len(phase_min)):
-        mu.append(objective(phase_min[i], a, b, c))
+        mu.append(objective_parab(phase_min[i], a, b, c))
         calc_sum.append(( (mag_min[i] - mu[i]) / error_min[i] )**2)
     total_calc = np.sum(calc_sum)    
     x2 = total_calc / (len(phase_min) - 3)
     return x2
+
+def calc_max_x2(phase_max, mag_max, error_max, a, b, c):
+    mu = []
+    calc_sum = []
+    for i in range(len(phase_max)):
+        mu.append(objective_sine(phase_max[i], a, b, c))
+        calc_sum.append(( (mag_max[i] - mu[i]) / error_max[i] )**2)
+    total_calc = np.sum(calc_sum)    
+    max_x2 = total_calc / (len(phase_max) - 3)
+    return max_x2
 
 
 
@@ -321,9 +355,6 @@ def get_mins_move_avg(lightcurve):
     
     return phase1_cleaned, mag1_cleaned, error1_cleaned, params_min1, phase2_cleaned, mag2_cleaned, error2_cleaned, params_min2 
     
-    
-    
-    
 
 def main(data):
     lightcurve, lc_mags_sort = exlightfile(data, command)
@@ -335,110 +366,217 @@ def main(data):
         a_min1, fittedPhase_min1, fittedMag_min1 = params_min1
         a_min2, fittedPhase_min2, fittedMag_min2 = params_min2
         
-    BOLD_UNDERLINE = '\033[1;4;30;107m'
-    BOLD = '\033[1;4m'
-    RED = '\033[41;1m'
-    BLUE = '\033[44;1m'
-    YELLOW = '\033[43;1m'
-    CYAN = '\033[46;1m'
-    RESET = '\033[0m'
+    if fittedMag_min1 > fittedMag_min2:
+        pri_min_phases = phase_min1
+        pri_min_mags = mag_min1
+        pri_min_errors = error_min1
+        pri_mag = fittedMag_min1
+        pri_phase = fittedPhase_min1
+        pri_a = a_min1
+        sec_min_phases = phase_min2
+        sec_min_mags = mag_min2
+        sec_min_errors = error_min2
+        sec_mag = fittedMag_min2
+        sec_phase = fittedPhase_min2
+        sec_a = a_min2
+    else:
+        pri_min_phases = phase_min2
+        pri_min_mags = mag_min2
+        pri_min_errors = error_min2
+        pri_mag = fittedMag_min2
+        pri_phase = fittedPhase_min2
+        pri_a = a_min2
+        sec_min_phases = phase_min1
+        sec_min_mags = mag_min1
+        sec_min_errors = error_min1
+        sec_mag = fittedMag_min1
+        sec_phase = fittedPhase_min1
+        sec_a = a_min1
     
-    print()
-    print(f'{BOLD_UNDERLINE}Method: {method}; Window: {window}; Method Sample: {numpoints} Points{RESET}')
-    print()
-    print(f'{YELLOW}First Minimum Fit{RESET}: y = {round(a_min1,6)} * (x-{round(fittedPhase_min1,6)})^2 + {round(fittedMag_min1,6)}')
-    print(f'{CYAN}Second Minimum Fit{RESET}: y = {round(a_min2,6)} * (x-{round(fittedPhase_min2,6)})^2 + {round(fittedMag_min2,6)}')
-    print()
+    phases = []
+    mags = []
+    errors = []
+    max_phases = []
+    max_mags = []
+    max_errors = []
+    for i in range(len(lightcurve)):
+        phases.append(lightcurve[i][0])
+        mags.append(lightcurve[i][1])
+        errors.append(lightcurve[i][2])
+        
     
+    first_min = min(fittedPhase_min1,fittedPhase_min2)
+    second_min = max(fittedPhase_min1,fittedPhase_min2)
     
-    phase_min1_left = []
-    mag_min1_left = []
-    error_min1_left = []
+    for i in range(len(phases)):
+        if ((phases[i] > first_min + window/2 and phases[i] < second_min - window/2)
+            or (phases[i] > second_min + window/2 and phases[i] < first_min + 1 - window/2)):
+            max_phases.append(phases[i])
+            max_mags.append(mags[i])
+            max_errors.append(errors[i])
+
+    initial_mag_shift = np.mean([fittedPhase_min1, fittedPhase_min2]) - np.mean(max_mags)
+    initial_amp = np.mean(max_mags)
+            
+    params_max = fit_maximums(max_phases, max_mags, fittedPhase_min1, initial_mag_shift, initial_amp)
+    sine_amp, sine_phase_shift, sine_mag_shift = params_max
     
-    phase_min1_right = []
-    mag_min1_right = []
-    error_min1_right = []
+    pri_phase_l = []
+    pri_mag_l = []
+    pri_error_l = []
     
-    phase_min2_left = []
-    mag_min2_left = []
-    error_min2_left = []
+    pri_phase_r = []
+    pri_mag_r = []
+    pri_error_r = []
     
-    phase_min2_right = []
-    mag_min2_right = []
-    error_min2_right = []
+    sec_phase_l = []
+    sec_mag_l = []
+    sec_error_l = []
     
-    for i in range(len(phase_min1)):
-        if phase_min1[i] < fittedPhase_min1:
-            phase_min1_left.append(phase_min1[i])
-            mag_min1_left.append(mag_min1[i])
-            error_min1_left.append(error_min1[i])
+    sec_phase_r = []
+    sec_mag_r = []
+    sec_error_r = []
+    
+    for i in range(len(pri_min_phases)):
+        if pri_min_phases[i] < pri_phase:
+            pri_phase_l.append(pri_min_phases[i])
+            pri_mag_l.append(pri_min_mags[i])
+            pri_error_l.append(pri_min_errors[i])
         else:
-            phase_min1_right.append(phase_min1[i])
-            mag_min1_right.append(mag_min1[i])
-            error_min1_right.append(error_min1[i])
+            pri_phase_r.append(pri_min_phases[i])
+            pri_mag_r.append(pri_min_mags[i])
+            pri_error_r.append(pri_min_errors[i])
     
-    for i in range(len(phase_min2)):
-        if phase_min2[i] < fittedPhase_min2:
-            phase_min2_left.append(phase_min2[i])
-            mag_min2_left.append(mag_min2[i])
-            error_min2_left.append(error_min2[i])
+    for i in range(len(sec_min_phases)):
+        if sec_min_phases[i] < sec_phase:
+            sec_phase_l.append(sec_min_phases[i])
+            sec_mag_l.append(sec_min_mags[i])
+            sec_error_l.append(sec_min_errors[i])
         else:
-            phase_min2_right.append(phase_min2[i])
-            mag_min2_right.append(mag_min2[i])
-            error_min2_right.append(error_min2[i])
+            sec_phase_r.append(sec_min_phases[i])
+            sec_mag_r.append(sec_min_mags[i])
+            sec_error_r.append(sec_min_errors[i])
     
     
-    x2_11 = calc_x2(phase_min1, mag_min1, error_min1, a_min1, fittedPhase_min1, fittedMag_min1)
-    x2_11l = calc_x2(phase_min1_left, mag_min1_left, error_min1_left, a_min1, fittedPhase_min1, fittedMag_min1)
-    x2_11r = calc_x2(phase_min1_right, mag_min1_right, error_min1_right, a_min1, fittedPhase_min1, fittedMag_min1)
-    print(f'{RED}First Min Data{RESET}, {YELLOW}First Min Fit{RESET} x2 = {BOLD}{round(x2_11,6)}{RESET};   Left Side x2 = {BOLD}{round(x2_11l,6)}{RESET};   Right Side x2 = {BOLD}{round(x2_11r,6)}{RESET}')
-    x2_22 = calc_x2(phase_min2, mag_min2, error_min2, a_min2, fittedPhase_min2, fittedMag_min2)
-    x2_22l = calc_x2(phase_min2_left, mag_min2_left, error_min2_left, a_min2, fittedPhase_min2, fittedMag_min2)
-    x2_22r =calc_x2(phase_min2_right, mag_min2_right, error_min2_right, a_min2, fittedPhase_min2, fittedMag_min2)
-    print(f'{BLUE}Second Min Data{RESET}, {CYAN}Second Min Fit{RESET} x2 = {BOLD}{round(x2_22,6)}{RESET};   Left Side x2 = {BOLD}{round(x2_22l,6)}{RESET};   Right Side x2 = {BOLD}{round(x2_22r,6)}{RESET}')
-    print()
-    x2_21 = calc_x2(phase_min1, mag_min1, error_min1, a_min2, fittedPhase_min1, fittedMag_min2)
-    print(f'{RED}First Min Data{RESET}, {CYAN}Second Min Fit{RESET} x2 = {BOLD}{round(x2_21,6)}{RESET}')
-    x2_12 = calc_x2(phase_min2, mag_min2, error_min2, a_min1, fittedPhase_min2, fittedMag_min1)
-    print(f'{BLUE}Second Min Data{RESET}, {YELLOW}First Min Fit{RESET} x2 = {BOLD}{round(x2_12,6)}{RESET}')
-    print()
+    x2_pp = calc_x2(pri_min_phases, pri_min_mags, pri_min_errors, pri_a, pri_phase, pri_mag)
+    x2_ppl = calc_x2(pri_phase_l, pri_mag_l, pri_error_l, pri_a, pri_phase, pri_mag)
+    x2_ppr = calc_x2(pri_phase_r, pri_mag_r, pri_error_r, pri_a, pri_phase, pri_mag)
+    x2_ss = calc_x2(sec_min_phases, sec_min_mags, sec_min_errors, sec_a, sec_phase, sec_mag)
+    x2_ssl = calc_x2(sec_phase_l, sec_mag_l, sec_error_l, sec_a, sec_phase, sec_mag)
+    x2_ssr =calc_x2(sec_phase_r, sec_mag_r, sec_error_r, sec_a, sec_phase, sec_mag)
+    x2_ps = calc_x2(sec_min_phases, sec_min_mags, sec_min_errors, pri_a, sec_phase, pri_mag)
+    x2_sp = calc_x2(pri_min_phases, pri_min_mags, pri_min_errors, sec_a, pri_phase, sec_mag)
+    x2_max = calc_max_x2(max_phases, max_mags, max_errors, sine_amp, sine_phase_shift, sine_mag_shift)
+    
+    x = np.linspace(0,2,400)
+
+    sine_max_mag = min(objective_sine(x, sine_amp, sine_phase_shift, sine_mag_shift))
+    sine_max_flux = 10**((sine_max_mag + 48.60)/(-2.5))
+    sine_min_mag = max(objective_sine(x, sine_amp, sine_phase_shift, sine_mag_shift))
+    sine_min_flux = 10**((sine_min_mag + 48.60)/(-2.5))
+    pri_flux = 10**((pri_mag + 48.60)/(-2.5))
+    sec_flux = 10**((sec_mag + 48.60)/(-2.5))
+    
+    teff_ratio = ((sine_max_flux - sec_flux) / (sine_max_flux - pri_flux)) ** (1/4)
+
+    ep_sin2i = (sine_max_flux - sine_min_flux) / pri_flux  
+    
+    z = symbols('z')
+    min1_fit = a_min1 * (z - fittedPhase_min1)**2 + fittedMag_min1
+    min2_fit = a_min2 * (z - fittedPhase_min2)**2 + fittedMag_min2
+    
+    min1_eq = Eq(min1_fit, sine_max_mag)
+    min2_eq = Eq(min2_fit, sine_max_mag)
+    
+    min1_window = solve(min1_eq, z)
+    min2_window = solve(min2_eq, z)
+    
+    min1_duration = max(min1_window) - min(min1_window)
+    min2_duration = max(min2_window) - min(min2_window)
+    
+    esinw = (min2_duration - min1_duration) / (min1_duration + min2_duration)
+    
+    min1_loc = fittedPhase_min1
+    min2_loc = fittedPhase_min2
+    if min2_loc < min1_loc:
+        min2_loc += 1
+    min2_loc -= min1_loc
+    
+    ecosw = (min2_loc - 0.5)
+    
+    ecc = (esinw**2 + ecosw**2)**(1/2)
+    peri = math.atan(esinw / ecosw) * 180 / np.pi
+    
+    if (esinw > 0 and ecosw < 0) or (esinw < 0 and ecosw < 0):
+        peri += 180
+    elif (esinw < 0 and ecosw > 0):
+        peri += 360
+
+    if command == 'lcs':
+        return_lcvis = {"Teff" : teff_ratio, "ep_sin2i" : ep_sin2i, "Eccentricity" : ecc, "Periastron" : peri,
+                        "Max_FitPhase" : sine_phase_shift, "Max_FitMag" : sine_mag_shift, "Max_FitAmp" : sine_amp, 
+                        "Max_X2" : x2_max, "Max_Phase" : max_phases, "Max_Mag" : max_mags,
+                        "Pri_Min_Phases" : pri_min_phases, "Pri_Min_Mags" : pri_min_mags, "Pri_Min_Errors" : pri_min_errors,
+                        "Sec_Min_Phases" : sec_min_phases, "Sec_Min_Mags" : sec_min_mags, "Sec_Min_Errors" : sec_min_errors,
+                        "Pri_A" : pri_a, "Pri_Phase" : pri_phase, "Pri_Mag" : pri_mag,
+                        "Sec_A" : sec_a, "Sec_Phase" : sec_phase, "Sec_Mag" : sec_mag,
+                        "FitP,MinP" : x2_pp, "FitP,MinPL" : x2_ppl, "FitP,MinPR" : x2_ppr,
+                        "FitS,MinS" : x2_ss, "FitS,MinSL" : x2_ssl, "FitS,MinSR" : x2_ssr,
+                        "FitP,MinS" : x2_ps, "FitS,MinP" : x2_sp}
+        
+        sys.stdout.buffer.write(pickle.dumps(return_lcvis))
+        
 
     if show_plot == 'true':
-        phases = []
-        mags = []
-        errors = []
+        matplotlib.rcParams["font.size"] = 7
+        fig, ax = plt.subplots()
         x = np.linspace(0,2,400)
-        for i in range(len(lightcurve)):
-            phases.append(lightcurve[i][0])
-            mags.append(lightcurve[i][1])
-            errors.append(lightcurve[i][2])
+        plt.subplots_adjust(left=0.05,right=0.7,bottom=0.1,top=0.92)
         plt.errorbar(phases, mags, yerr = errors, label = 'Phased Data', color = 'k', fmt='o', elinewidth = 1, zorder = 1)
-        plt.errorbar(phase_min1, mag_min1, yerr = error_min1, label = 'Min 1', color = 'red', fmt='o', elinewidth = 1, zorder = 2)
-        plt.errorbar(phase_min2, mag_min2, yerr = error_min2, label = 'Min 2', color = 'blue', fmt='o', elinewidth = 1, zorder = 2)
-        plt.plot(x, objective(x, a_min1, fittedPhase_min1, fittedMag_min1), label = 'Min 1 Fit', color = 'y', linewidth = 3, zorder = 3)
-        plt.plot(x, objective(x, a_min1, fittedPhase_min2, fittedMag_min1), label = 'Min 1 Fit on Min 2', color = 'y', linestyle = '--', linewidth = 3, zorder = 4)
-        plt.plot(x, objective(x, a_min2, fittedPhase_min2, fittedMag_min2), label = 'Min 2 Fit', color = 'c', linewidth = 3, zorder = 3)
-        plt.plot(x, objective(x, a_min2, fittedPhase_min1, fittedMag_min2), label = 'Min 2 Fit on Min 1', color = 'c', linestyle = '--', linewidth = 3, zorder = 4)        
+        plt.errorbar(pri_min_phases, pri_min_mags, yerr = pri_min_errors, label = 'Primary', color = 'red', fmt='o', elinewidth = 1, zorder = 2)
+        plt.errorbar(sec_min_phases, sec_min_mags, yerr = sec_min_errors, label = 'Secondary', color = 'blue', fmt='o', elinewidth = 1, zorder = 2)
+        plt.plot(x, objective_parab(x, pri_a, pri_phase, pri_mag), label = 'Primary Fit', color = 'y', linewidth = 3, zorder = 4)
+        plt.plot(x, objective_parab(x, pri_a, sec_phase, pri_mag), label = 'Primary Fit on Secondary', color = 'y', linestyle = '--', linewidth = 3, zorder = 5)
+        plt.plot(x, objective_parab(x, sec_a, sec_phase, sec_mag), label = 'Secondary Fit', color = 'c', linewidth = 3, zorder = 4)
+        plt.plot(x, objective_parab(x, sec_a, pri_phase, sec_mag), label = 'Secondary Fit on Primary', color = 'c', linestyle = '--', linewidth = 3, zorder = 5)
+        plt.plot(x, objective_sine(x, sine_amp, sine_phase_shift, sine_mag_shift), label = 'Maxima Fit', color = 'tab:orange', linewidth = 3, zorder = 3)
         plt.ylim(max(mags)+0.2,min(mags)-0.2)
-        left_bound = min([fittedPhase_min1, fittedPhase_min2]) - window
-        right_bound = max([fittedPhase_min1, fittedPhase_min2]) + window
+        left_bound = min([fittedPhase_min1, fittedPhase_min2]) - window*2
+        right_bound = min([fittedPhase_min1, fittedPhase_min2]) + 1
         plt.xlim(left_bound, right_bound)
-        plt.legend()
+        
+        fig.text(0.72,0.9,f'Primary Minimum Fit: y = {round(pri_a,6)} * (x - {round(pri_phase,6)})² + {round(pri_mag,6)}', backgroundcolor='y')
+        fig.text(0.72,0.8,f'Primary Min Data, Primary Min Fit χ² = {round(x2_pp,6)} \n Left Side χ² = {round(x2_ppl,6)} \n Right Side χ² = {round(x2_ppr,6)}', color='r', backgroundcolor='y')
+        fig.text(0.72,0.75,f'Secondary Min Data, Primary Min Fit χ² = {round(x2_ps,6)}', color='b', backgroundcolor='y')
+        
+        fig.text(0.72,0.65,f'Secondary Minimum Fit: y = {round(sec_a,6)} * (x - {round(sec_phase,6)})² + {round(sec_mag,6)}', backgroundcolor='c')
+        fig.text(0.72,0.55,f'Secondary Min Data, Secondary Min Fit χ² = {round(x2_ss,6)} \n Left Side χ² = {round(x2_ssl,6)} \n Right Side χ² = {round(x2_ssr,6)}', color='b', backgroundcolor='c')
+        fig.text(0.72,0.5,f'Primary Min Data, Secondary Min Fit χ² = {round(x2_sp,6)}', color='r', backgroundcolor='c')
+        
+        fig.text(0.72,0.35,f'Maxima Fit: y = {round(sine_amp,6)} * sin(2π * (x - {round(sine_phase_shift,6)}) + {round(sine_mag_shift,6)}', backgroundcolor='tab:orange')
+        fig.text(0.72,0.3,f'Maxima Fit χ² = {round(x2_max,6)}', backgroundcolor='tab:orange')
+        
+        fig.text(0.72,0.15,f'Effective Temperature Ratio = {round(teff_ratio,6)}' + '\n'
+                         + f'Oblateness * sin²(Inclination) = {round(ep_sin2i,6)}' + '\n'
+                         + f'Eccentricity = {round(ecc,6)}' + '\n'
+                         + f'Periastron = {round(peri,6)}', backgroundcolor='tab:gray')
+        
+        plt.legend(loc='best')
         plt.xlabel('Phase')
         plt.ylabel('Magnitude')
-        plt.title(f'Minima Fits: {method}')
+        plt.title(f'{data} Minima Fits, Method = {method}, Window = {window}, Numpoints = {numpoints}')
+        plt.get_current_fig_manager().set_window_title('Chi-Square Binary Test Output')
+        
         plt.show()
     
     return
 
-import matplotlib.pyplot as plt
-import argparse as args
 parser = args.ArgumentParser()
 parser.add_argument("indata", help = "Object's data file")
 parser.add_argument("--numpoints", "-n", help = "Number of points to take when finding lowest magnitudes", default = 20)
 parser.add_argument("--window", "-w", help = "Width of minima", default = 0.1)
 parser.add_argument("--command", "-c", help = "Location where script was called", default = "lcf")
-parser.add_argument("--method", "-m", help = "Method to find minima", default = "low_mags")
+parser.add_argument("--method", "-m", help = "Method to find minima", default = "move_avg")
 parser.add_argument("--show_plot", "-p", help = "Show fit plot", default = "true")
 args = parser.parse_args()
 data = args.indata
@@ -447,6 +585,7 @@ window = float(args.window)
 numpoints = int(args.numpoints)
 method = args.method
 show_plot = args.show_plot
+object_name = os.path.basename(data)
 
 run = main(data)
 

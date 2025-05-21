@@ -247,7 +247,7 @@ def collect_file():
     plots_label = QLabel("Optional Fits")
     plots_lcvis = QCheckBox("Lcvis Fits", dlg)
     plots_lcvis.clicked.connect(ask_overwrite)
-    plots_chisqbin = QCheckBox("ChiSqBinTest Fits", dlg)
+    plots_chisqbin = QCheckBox("CSBT Fits", dlg)
     plots_chisqbin.clicked.connect(ask_overwrite)
     plots_layout = QHBoxLayout()
     plots_layout.addWidget(plots_lcvis)
@@ -448,10 +448,10 @@ def save_data(event):
     
 
 
-# RUN_CHISQBINTEST runs the chisqbintest.py program with input parameters   
+# RUN_CHISQBINTEST runs the csbt.py program with input parameters   
 def run_chisqbintest(event):
     dlg = QDialog()
-    dlg.setWindowTitle('Input chisqbintest.py parameters')
+    dlg.setWindowTitle('Input csbt.py parameters')
     
     numpoints_box = QSpinBox(dlg)
     numpoints_box.setMinimum(2)
@@ -513,7 +513,7 @@ def run_chisqbintest(event):
         chibin_data.sort()
         
         try: 
-            results = subprocess.run(['python3.10', "/Users/jacobjuvan/Variable/vsp/ceph_tools/chisqbintest.py", f"{str(chibin_data)}", "-n", f"{numpoints}", "-w", f"{window}", "-m", f"{method}", "-c", "lcs", "-p", "false"], stdout=subprocess.PIPE)
+            results = subprocess.run(['python3.10', os.path.dirname(__file__) + "/csbt.py", f"{str(chibin_data)}", "-n", f"{numpoints}", "-w", f"{window}", "-m", f"{method}", "-c", "lcs", "-p", "false"], stdout=subprocess.PIPE)
             parameters = pickle.loads(results.stdout)
         
             d2 = np.vstack((parameters["Pri_Min_Phases"],parameters["Pri_Min_Mags"]))
@@ -558,7 +558,7 @@ def run_chisqbintest(event):
             
             run_complete = QMessageBox()
             run_complete.setIcon(QMessageBox.Information)
-            run_complete.setText('Chisqbintest.py ran succesfully.')
+            run_complete.setText('csbt.py ran succesfully.')
             run_complete.setStandardButtons(QMessageBox.Ok)
             run_complete.exec_()
         
@@ -947,7 +947,7 @@ def clear_chibin(event):
         
         clear_complete = QMessageBox()
         clear_complete.setIcon(QMessageBox.Information)
-        clear_complete.setText('Sucessfully cleared chisqbintest output.')
+        clear_complete.setText('Sucessfully cleared CSBT output.')
         clear_complete.setStandardButtons(QMessageBox.Ok)
         clear_complete.exec_()
 
@@ -1197,7 +1197,7 @@ slider = Slider(slider_ax, f"{current_selection['Argument']}", arg_min[current_s
                 valstep = arg_stepsize[current_selection['Argument']], color='black')
 slider.set_val(per_initial)
 Bsave = Button(ax=save_ax,label='Save')
-Brunchibin = Button(ax=runchibin_ax, label='Run chisqbintest.py')
+Brunchibin = Button(ax=runchibin_ax, label='Run csbt.py')
 Bclearchibin = Button(ax=clearchibin_ax, label='Clear CSBT Output')
 
 

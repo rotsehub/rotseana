@@ -1,11 +1,6 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Mar 16 21:16:04 2025
-
-@author: jacobjuvan
-"""
-
+# originally created by Grant P Donnelly
+# updated and rewritten by Jacob Juvan
+# last updated: June 16, 2025
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np

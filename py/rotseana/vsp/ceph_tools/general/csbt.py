@@ -1,4 +1,6 @@
-# fit a straight line to the economic data
+# created by Aidan Kehoe
+# editted by Jacob Juvan
+# last updated: June 16, 2025
 from scipy.optimize import curve_fit
 from operator import itemgetter
 from scipy.optimize import fsolve

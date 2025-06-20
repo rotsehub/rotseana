@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import readsav
 from scipy import stats as st
+from scipy.optimize import curve_fit
 from astropy.io import fits
 from decimal import Decimal
 plt.rc('legend', fontsize = 12)
@@ -144,14 +145,26 @@ def print_lightcurve(lightcurve, xerror, final):
 
 def save_lightcurve(lightcurve, cwd, vra, vdec):
     os.chdir(cwd)
-    filename = f'lightcurve_ra{vra:.5f}_dec{vdec:.5f}.dat'
-    print(f"You can find a copy of the light curve named {filename} in the same directory as unconex2.py")
+    vra = str(vra)
+    vdec = str(vdec)
+    if vra.index('.') != 6:
+        vra, vdec = deci2sexa(vra, vdec)
+    vra = vra[0:4]
+    vdec = vdec[0:4]
+    filename = f'J{vra}+{vdec}_unconex.dat'
+    print(f"You can find a copy of the light curve named {filename} in {cwd}")
     np.savetxt(filename, lightcurve, fmt = '%.11f')
 
 def save_log(log_params, cwd, vra, vdec):
     os.chdir(cwd)
-    filename = f'log_ra{vra:.5f}_dec{vdec:.5f}.dat'
-    print(f"You can find a copy of the log file named {filename} in the same directory as unconex2.py")
+    vra = str(vra)
+    vdec = str(vdec)
+    if vra.index('.') != 6:
+        vra, vdec = deci2sexa(vra, vdec)
+    vra = vra[0:4]
+    vdec = vdec[0:4]
+    filename = f'J{vra}+{vdec}_log_unconex.dat'
+    print(f"You can find a copy of the log file named {filename} in {cwd}")
     open(f'{filename}', 'w').writelines('%s\n' % x for x in log_params)
 
 def getBinaryStr(bitSum):
@@ -172,37 +185,144 @@ def applyBitmask(lightCurve, bitmask):
                 flagged[8].append(x)
     return flagged
 
+def objective_line(x, m, b):
+#creates a line#
+    return b + m * x
+
+def fit_obs(time, mag, err, m, b):
+#finds parabolic fit parameters#
+    p0 = [None] * 2
+    p0[0] = m # slope
+    p0[1] = b # mag shift
+    params, pcov = curve_fit(objective_line, time, mag, p0, sigma=err, absolute_sigma=True)
+    return params, pcov
+
 def unconex(lightCurve, schedule, threshold, xerror):
     confirmation = [[0, 0] for x in lightCurve] # Array for confirmation state of each observation
     consistence = [[0, 0] for x in lightCurve] # Array for consistence state of each observation
+    grouped = [[0, 0] for x in lightCurve] # Array for grouped state of each observation
     filtLightCurve = [] # Array for filtered light curve
     graceTime = 40 # Grace time definition 
+
+    
     for x in range(len(confirmation) - 1): # Loop through each entry in confirmation
         if abs(lightCurve[x][0] - lightCurve[x + 1][0]) <= (lightCurve[x][3] + graceTime) / 86400:
             confirmation[x][1] += 1
             confirmation[x + 1][0] += 1
+        else:
+            pass
+    
     for x in range(len(consistence) - 1):
         if confirmation[x][1] == 1 and confirmation[x + 1][0] == 1:
             if abs(lightCurve[x][1] - lightCurve[x + 1][1]) <= threshold * (((lightCurve[x][2] ** 2) + (lightCurve[x + 1][2] ** 2)) ** 0.5):
                 consistence[x][1] += 1
                 consistence[x + 1][0] += 1
         else: 
-            pass
+            pass   
+    
+    
+    for x in range(len(grouped)):
+        grouped[x] = consistence[x]
+        
+    times = []
+    for x in range(len(lightCurve)):
+        times.append(np.floor(lightCurve[x][0]))
+    days = np.unique(times).tolist()
+    nightlies_consistent = []
+    for day in days:
+        night = []
+        for i in range(len(lightCurve)):
+            if np.floor(lightCurve[i][0]) == day and consistence[i] != [0, 0]:
+                night.append(lightCurve.index(lightCurve[i]))
+        nightlies_consistent.append(night)
+        
+    for night in nightlies_consistent:
+        lone_pairs_begin = True
+        while lone_pairs_begin:
+            do_check = False
+            for i in range(len(night) - 1):
+                if grouped[night[i]] != [0, 0]:
+                    first_obs_index = night[i]
+                    second_obs_index = night[i + 1]
+                    do_check = True
+                    break
+                else:
+                    continue
+            if do_check:
+                if consistence[first_obs_index] == [0, 1] and consistence[second_obs_index] == [1, 0]:
+                    if abs(lightCurve[second_obs_index][0] - lightCurve[night[i + 2]][0]) > ((lightCurve[second_obs_index][3] + graceTime) / 86400) * 2:
+                        grouped[first_obs_index] = [0, 0]
+                        grouped[second_obs_index] = [0, 0]
+                    elif abs(lightCurve[second_obs_index][1] - lightCurve[night[i + 2]][1]) > threshold * (((lightCurve[second_obs_index][2] ** 2) + (lightCurve[night[i + 2]][2] ** 2)) ** 0.5):
+                        grouped[first_obs_index] = [0, 0]
+                        grouped[second_obs_index] = [0, 0]
+                    else:
+                        lone_pairs_begin = False
+                else:
+                    lone_pairs_begin = False
+            else:
+                lone_pairs_begin = False
+             
+        lone_pairs_end = True
+        while lone_pairs_end:
+            do_check = False
+            for i in range(len(night) - 1, 0, -1):
+                if grouped[night[i]] != [0, 0]:
+                    last_obs_index = night[i]
+                    second_last_obs_index = night[i - 1]
+                    do_check = True
+                    break
+                else:
+                    continue
+            if do_check:
+                if consistence[last_obs_index] == [1, 0] and consistence[second_last_obs_index] == [0, 1]:
+                    if abs(lightCurve[night[i - 2]][0] - lightCurve[second_last_obs_index][0]) > ((lightCurve[night[i - 2]][3] + graceTime) / 86400) * 2:
+                        grouped[last_obs_index] = [0, 0]
+                        grouped[second_last_obs_index] = [0, 0]
+                    elif abs(lightCurve[night[i - 2]][1] - lightCurve[second_last_obs_index][1]) > threshold * (((lightCurve[second_last_obs_index][2] ** 2) + (lightCurve[night[i - 2]][2] ** 2)) ** 0.5):
+                        grouped[last_obs_index] = [0, 0]
+                        grouped[second_last_obs_index] = [0, 0]
+                    else:
+                        lone_pairs_end = False
+                else:
+                    lone_pairs_end = False
+            else:
+                lone_pairs_end = False
+
+    '''
+    for x in range(len(grouped) - 1):
+        if grouped[x] == [0, 1] and grouped[x + 1] == [1, 0]:
+            grouped[x] = [0, 0]
+            grouped[x + 1] = [0, 0]
+    '''
+
+    
     unconfirmed = [lightCurve[x] for x in range(len(lightCurve)) if confirmation[x][0] != 1 and confirmation[x][1] != 1]
     inconsistent = [lightCurve[x] for x in range(len(lightCurve)) if consistence[x][0] != 1 and consistence[x][1] != 1 and lightCurve[x] not in unconfirmed]
-    print(f'{len(lightCurve) - len(unconfirmed)} observations were confirmed')
+    lonepair = [lightCurve[x] for x in range(len(lightCurve)) if grouped[x][0] != 1 and grouped[x][1] != 1 and lightCurve[x] not in inconsistent and lightCurve[x] not in unconfirmed]
+    print(f'{len(lightCurve) - len(unconfirmed)} observations are confirmed')
     print(f'{len(lightCurve) - len(unconfirmed) - len(inconsistent)} observations are consistent')
+    print(f'{len(lightCurve) - len(unconfirmed) - len(inconsistent) - len(lonepair)} observations are grouped')
+    
+    
     averaged = []
     i = 0
     while i in range(len(lightCurve)):
         if i == len(lightCurve) - 1:
-            if consistence[i][0] == 1 and consistence[i - 1][1] == 1:
+            if grouped[i][0] == 1 and grouped[i - 1][1] == 1:
                 point = [lightCurve[i][0] + lightCurve[i][3] / 86400 / 2, lightCurve[i][1], lightCurve[i][2]]
                 if xerror:
                     point.append(lightCurve[i][3] / 86400 / 2)
                 filtLightCurve.append(point)
             i += 1
-        elif consistence[i][1] == 1 and consistence[i + 1][0] == 1:
+        elif np.floor(lightCurve[i][0]) < np.floor(lightCurve[i + 1][0]):
+            if grouped[i][0] == 1 and grouped[i - 1][1] == 1:
+                point = [lightCurve[i][0] + lightCurve[i][3] / 86400 / 2, lightCurve[i][1], lightCurve[i][2]]
+                if xerror:
+                    point.append(lightCurve[i][3] / 86400 / 2)
+                filtLightCurve.append(point)
+            i += 1
+        elif grouped[i][1] == 1 and grouped[i + 1][0] == 1:
             meanEpoch = (lightCurve[i][0] + lightCurve[i + 1][0] + (lightCurve[i + 1][3]) / 86400) / 2
             meanMag = np.average([lightCurve[i][1], lightCurve[i + 1][1]], weights = [1 / lightCurve[i][2] ** 2, 1 / lightCurve[i + 1][2] ** 2])
             if abs(lightCurve[i][1] - lightCurve[i + 1][1]) >= math.sqrt(2) * np.mean([lightCurve[i][2], lightCurve[i + 1][2]]):
@@ -216,7 +336,7 @@ def unconex(lightCurve, schedule, threshold, xerror):
             filtLightCurve.append(point)
             averaged.append([point, lightCurve[i], lightCurve[i + 1]])
             i += 2
-        elif consistence[i][0] == 1 and consistence[i - 1][1] == 1:
+        elif grouped[i][0] == 1 and grouped[i - 1][1] == 1:
             point = [lightCurve[i][0] + lightCurve[i][3] / 86400 / 2, lightCurve[i][1], lightCurve[i][2]]
             if xerror:
                 point.append(lightCurve[i][3] / 86400 / 2)
@@ -226,15 +346,16 @@ def unconex(lightCurve, schedule, threshold, xerror):
             i += 1
     print(f'{len(averaged) * 2} observations were averaged')
     print(f'{len(filtLightCurve) - len(averaged)} consistent but unpaired observations were retained')
-    return filtLightCurve, averaged, unconfirmed, inconsistent
+    return filtLightCurve, averaged, unconfirmed, inconsistent, lonepair
 
-def getPlots(lightCurve, filtLightCurve, flagged, averaged, unconfirmed, inconsistent, rightAscension, declination, bitmask, minUncertainty, xerror):
+def getPlots(lightCurve, filtLightCurve, flagged, averaged, unconfirmed, inconsistent, lonepair, rightAscension, declination, bitmask, minUncertainty, xerror):
     lightCurve = [[x[0], x[1], x[2]] for x in lightCurve]
     unconfirmed = [[x[0], x[1], x[2]] for x in unconfirmed]
     inconsistent = [[x[0], x[1], x[2]] for x in inconsistent]
+    lonepair = [[x[0], x[1], x[2]] for x in lonepair]
     meanErr = np.mean([x[2] for x in lightCurve])
     filtMeanErr = np.mean([x[2] for x in filtLightCurve])
-    maskedObs = [x for x in lightCurve if x not in unconfirmed and x not in inconsistent]
+    maskedObs = [x for x in lightCurve if x not in unconfirmed and x not in inconsistent and x not in lonepair]
     averagedObs = [x[0] for x in averaged]
     unpairedObs = [x for x in filtLightCurve if x not in averagedObs]
     #if xerror:
@@ -247,6 +368,7 @@ def getPlots(lightCurve, filtLightCurve, flagged, averaged, unconfirmed, inconsi
     ax1.errorbar([x[0] for x in flagged[8]], [x[1] for x in flagged[8]], [x[2] for x in flagged[8]], fmt = '+', color = 'tab:orange', label = f'Flagged Observations ({len(flagged[8])})')
     ax1.errorbar([x[0] for x in unconfirmed], [x[1] for x in unconfirmed], [x[2] for x in unconfirmed], fmt = '+', color = 'tab:olive', label = f'Unconfirmed Observations ({len(unconfirmed)})')
     ax1.errorbar([x[0] for x in inconsistent], [x[1] for x in inconsistent], [x[2] for x in inconsistent], fmt = '+', color = 'tab:red', label = f'Inconsistent Observations ({len(inconsistent)})')
+    ax1.errorbar([x[0] for x in lonepair], [x[1] for x in lonepair], [x[2] for x in lonepair], fmt = '+', color = 'tab:pink', label = f'Lone Pair Observations ({len(lonepair)})')
     ax1.set_title(f'Target: {rightAscension:.7f} {declination:.7f}\nBitmask = {bitmask}, $\sigma_{{min}} = {minUncertainty}$\nUnfiltered Light Curve\n$\\bar{{\sigma}} = {meanErr:.6f}$')
     ax1.set(xlabel = 'Time (MJD)')
     ax1.set(ylabel = 'Magnitude')
@@ -266,7 +388,7 @@ def getPlots(lightCurve, filtLightCurve, flagged, averaged, unconfirmed, inconsi
     ax2.legend()
     return fig
 
-def getTestPlots(lightCurve, filtLightCurve, averaged, flagged, unconfirmed, inconsistent, rightAscension, declination):
+def getTestPlots(lightCurve, filtLightCurve, averaged, flagged, unconfirmed, inconsistent, lonepair, rightAscension, declination):
     fig, axs = plt.subplots(1)
     lightCurve = [[x[0], x[1], x[2]] for x in lightCurve]
     pairedObs = [[x[1], x[2]] for x in averaged]
@@ -283,6 +405,7 @@ def getTestPlots(lightCurve, filtLightCurve, averaged, flagged, unconfirmed, inc
     axs.errorbar([x[0] for x in avgObs], [x[1] for x in avgObs], [x[2] for x in avgObs], fmt = 'o', color = 'tab:purple', label = f'Averaged Observations ({len(averaged)})')
     axs.errorbar([x[0] for x in unconfirmed], [x[1] for x in unconfirmed], [x[2] for x in unconfirmed], fmt = '+', color = 'tab:olive', label = f'Unconfirmed Observations ({len(unconfirmed)})')
     axs.errorbar([x[0] for x in inconsistent], [x[1] for x in inconsistent], [x[2] for x in inconsistent], fmt = '+', color = 'tab:red', label = f'Inconsistent Observations ({len(inconsistent)})')
+    axs.errorbar([x[0] for x in lonepair], [x[1] for x in lonepair], [x[2] for x in lonepair], fmt = '+', color = 'tab:pink', label = f'Lone Pair Observations ({len(lonepair)})')
     axs.set(xlabel = 'Time (MJD)')
     axs.set(ylabel = 'Magnitude')
     axs.grid(axis = 'both', alpha = 0.75)
@@ -291,7 +414,13 @@ def getTestPlots(lightCurve, filtLightCurve, averaged, flagged, unconfirmed, inc
 
 ## Write # of flags and the end of file
 def writeFlags(binaryBitmask, flagged, vra, vdec, cwd, totalObs):
-    filename = f'lightcurve_ra{vra:.5f}_dec{vdec:.5f}.dat' ## put the file name in a variable
+    vra1 = str(vra)
+    vdec1 = str(vdec)
+    if vra1.index('.') != 6:
+        vra1, vdec1 = deci2sexa(vra, vdec)
+    vra1 = vra1[0:4]
+    vdec1 = vdec1[0:4]
+    filename = f'J{vra1}+{vdec1}_unconex.dat' ## put the file name in a variable
     os.chdir(cwd) ## get to the right directory 
     openedFile = open(f'{filename}', 'a') ## open the file to edit it
     if binaryBitmask[7] == '1': ## if user wants to use this flag (selcted this bitmask as an arugment)
@@ -331,6 +460,52 @@ def writeFlags(binaryBitmask, flagged, vra, vdec, cwd, totalObs):
 def sexa2deci(rightAscension, declination):
     rightAscension = float(''.join(rightAscension[:2])) * 15 + float(''.join(rightAscension[2:4])) * 0.25 + float(''.join(rightAscension[4:])) / 240
     declination = float(''.join(declination[:2])) + float(''.join(declination[2:4])) / 60 + float(''.join(declination[4:])) / 3600
+    return rightAscension, declination
+
+def deci2sexa(rightAscension, declination):
+    ra_hh = (float(rightAscension) / 15)
+    if ra_hh < 10:
+        ra_hh = str(ra_hh)
+        ra_hh = '0' + ra_hh
+    else:
+        ra_hh = str(ra_hh)
+    ra_hh_dec = ra_hh.index('.')
+    ra_mm = float(ra_hh[ra_hh_dec:]) * 60
+    if ra_mm < 10:
+        ra_mm = str(ra_mm)
+        ra_mm = '0' + ra_mm
+    else:
+        ra_mm = str(ra_mm)
+    ra_mm_dec = ra_mm.index('.')
+    ra_ss = float(ra_mm[ra_mm_dec:]) * 60
+    if ra_ss < 10:
+        ra_ss = str(ra_ss)
+        ra_ss = '0' + ra_ss
+    else:
+        ra_ss = str(ra_ss)
+    rightAscension = ra_hh[0:ra_hh_dec] + ra_mm[0:ra_mm_dec] + ra_ss
+    
+    decl_deg = (float(declination))
+    if decl_deg < 10:
+        decl_deg = str(decl_deg)
+        decl_deg = '0' + str(decl_deg)
+    else:
+        decl_deg = str(decl_deg)
+    decl_deg_dec = decl_deg.index('.')
+    decl_mm = float(decl_deg[decl_deg_dec:]) * 60
+    if decl_mm < 10:
+        decl_mm = str(decl_mm)
+        decl_mm = '0' + decl_mm
+    else:
+        decl_mm = str(decl_mm)
+    decl_mm_dec = decl_mm.index('.')
+    decl_ss = float(decl_mm[decl_mm_dec:]) * 60
+    if decl_ss < 10:
+        decl_ss = str(decl_ss)
+        decl_ss = '0' + decl_ss
+    else:
+        decl_ss = str(decl_ss)
+    declination = decl_deg[0:decl_deg_dec] + decl_mm[0:decl_mm_dec] + decl_ss
     return rightAscension, declination
 
 def main(fileDir, schedule, rightAscension, declination, threshold, bitmask, minUncertainty, xerror, plot, picklePlot, save, verbose, log, night, dev):
@@ -376,7 +551,7 @@ def main(fileDir, schedule, rightAscension, declination, threshold, bitmask, min
     for x in lightCurve:
         if x[2] < minUncertainty:
             x[2] = minUncertainty
-    filtLightCurve, averaged, unconfirmed, inconsistent = unconex(lightCurve, schedule, threshold, xerror)
+    filtLightCurve, averaged, unconfirmed, inconsistent, lonepair = unconex(lightCurve, schedule, threshold, xerror)
     filtLightCurve.sort()
     averaged.sort()
     unconfirmed.sort()
@@ -385,11 +560,17 @@ def main(fileDir, schedule, rightAscension, declination, threshold, bitmask, min
         print_lightcurve(filtLightCurve, xerror, True)
     if plot or picklePlot:
         os.chdir(cwd)
-        fig = getPlots(lightCurve, filtLightCurve, flagged, averaged, unconfirmed, inconsistent, rightAscension, declination, bitmask, minUncertainty, xerror)
+        fig = getPlots(lightCurve, filtLightCurve, flagged, averaged, unconfirmed, inconsistent, lonepair, rightAscension, declination, bitmask, minUncertainty, xerror)
         if picklePlot:
-            filename = f'fig_ra{rightAscension:.5f}+dec{declination:.5f}.pkl'
+            vra2 = str(rightAscension)
+            vdec2 = str(declination)
+            if vra2.index('.') != 6:
+                vra2, vdec2 = deci2sexa(vra2, vdec2)
+            vra2 = vra2[0:4]
+            vdec2 = vdec2[0:4]
+            filename = f'J{vra2}+{vdec2}_unconex.pkl'
             pickle.dump(fig, open(f'{filename}', 'wb'))
-            print(f"A pickled plot of the light curve named {filename} has been saved in the same directory as unconex2.py")
+            print(f"A pickled plot of the light curve named {filename} has been saved in {cwd}")
     if save:
         save_lightcurve(filtLightCurve, cwd, rightAscension, declination)
     if log:
@@ -408,7 +589,7 @@ def main(fileDir, schedule, rightAscension, declination, threshold, bitmask, min
         np.savetxt('avgobs_ra'+str(rightAscension)+'_dec'+str(declination)+'.dat', avgObs, fmt = '%.11f')
         np.savetxt('priorobs_ra'+str(rightAscension)+'_dec'+str(declination)+'.dat', priorObs, fmt = '%.11f')
         np.savetxt('subobs_ra'+str(rightAscension)+'_dec'+str(declination)+'.dat', subsequentObs, fmt = '%.11f')
-        getTestPlots(lightCurve, filtLightCurve, averaged, flagged, unconfirmed, inconsistent, rightAscension, declination)
+        getTestPlots(lightCurve, filtLightCurve, averaged, flagged, unconfirmed, inconsistent, lonepair, rightAscension, declination)
     ## print numebr of flagged observations at the end of file
     writeFlags(binaryBitmask,flagged,rightAscension,declination,cwd,len(lightCurve))
     if plot:

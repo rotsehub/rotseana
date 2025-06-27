@@ -19,6 +19,7 @@ app = QApplication.instance()
 if not app:  # If there's no QApplication instance, create one
     app = QApplication(sys.argv)
 matplotlib.rcParams["font.size"] = 8
+matplotlib.use('Qt5Agg')
 
 
 

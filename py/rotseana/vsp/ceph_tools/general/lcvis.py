@@ -1,6 +1,6 @@
 # originally created by Grant P Donnelly
-# updated and rewritten by Jacob Juvan
-# last updated: June 16, 2025
+# editted by Jacob Juvan
+# last modified by Jacob Juvan: June 16, 2025
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np

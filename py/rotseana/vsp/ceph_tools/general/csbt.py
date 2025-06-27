@@ -1,6 +1,6 @@
-# created by Aidan Kehoe
+# originally created by Aidan Kehoe
 # editted by Jacob Juvan
-# last updated: June 16, 2025
+# last modified by Jacob Juvan: June 16, 2025
 from scipy.optimize import curve_fit
 from operator import itemgetter
 from scipy.optimize import fsolve

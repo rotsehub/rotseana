@@ -519,7 +519,7 @@ def run_chisqbintest(event):
         
         # attempt running csbt with given input parameters
         try: 
-            results = subprocess.run(['python3.10', os.path.dirname(__file__) + "/csbt.py", f"{str(chibin_data)}", "-n", f"{numpoints}", "-w", f"{window}", "-m", f"{method}", "-c", "lcs", "-p", "false"], stdout=subprocess.PIPE)
+            results = subprocess.run(['python3', os.path.dirname(__file__) + "/csbt.py", f"{str(chibin_data)}", "-n", f"{numpoints}", "-w", f"{window}", "-m", f"{method}", "-c", "lcs", "-p", "false"], stdout=subprocess.PIPE)
             parameters = pickle.loads(results.stdout)
         
             d2 = np.vstack((parameters["Pri_Min_Phases"],parameters["Pri_Min_Mags"]))

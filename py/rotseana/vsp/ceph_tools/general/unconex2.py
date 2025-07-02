@@ -151,7 +151,7 @@ def save_lightcurve(lightcurve, cwd, vra, vdec):
         vra, vdec = deci2sexa(vra, vdec)
     vra = vra[0:4]
     vdec = vdec[0:4]
-    filename = f'J{vra}+{vdec}_unconex.dat'
+    filename = f'J{vra}+{vdec}_ulc.dat'
     print(f"You can find a copy of the light curve named {filename} in {cwd}")
     np.savetxt(filename, lightcurve, fmt = '%.11f')
 
@@ -163,7 +163,7 @@ def save_log(log_params, cwd, vra, vdec):
         vra, vdec = deci2sexa(vra, vdec)
     vra = vra[0:4]
     vdec = vdec[0:4]
-    filename = f'J{vra}+{vdec}_log_unconex.dat'
+    filename = f'J{vra}+{vdec}_log_ulc.dat'
     print(f"You can find a copy of the log file named {filename} in {cwd}")
     open(f'{filename}', 'w').writelines('%s\n' % x for x in log_params)
 
@@ -420,7 +420,7 @@ def writeFlags(binaryBitmask, flagged, vra, vdec, cwd, totalObs):
         vra1, vdec1 = deci2sexa(vra, vdec)
     vra1 = vra1[0:4]
     vdec1 = vdec1[0:4]
-    filename = f'J{vra1}+{vdec1}_unconex.dat' ## put the file name in a variable
+    filename = f'J{vra1}+{vdec1}_ulc.dat' ## put the file name in a variable
     os.chdir(cwd) ## get to the right directory 
     openedFile = open(f'{filename}', 'a') ## open the file to edit it
     if binaryBitmask[7] == '1': ## if user wants to use this flag (selcted this bitmask as an arugment)
@@ -568,7 +568,7 @@ def main(fileDir, schedule, rightAscension, declination, threshold, bitmask, min
                 vra2, vdec2 = deci2sexa(vra2, vdec2)
             vra2 = vra2[0:4]
             vdec2 = vdec2[0:4]
-            filename = f'J{vra2}+{vdec2}_unconex.pkl'
+            filename = f'J{vra2}+{vdec2}_ulc.pkl'
             pickle.dump(fig, open(f'{filename}', 'wb'))
             print(f"A pickled plot of the light curve named {filename} has been saved in {cwd}")
     if save:

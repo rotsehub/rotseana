@@ -328,7 +328,7 @@ def get_mins_move_avg(lightcurve):
 
 
 def mag_to_flux(mags):
-#convert magnitude to flux using Vega as zero-point
+#convert magnitude to flux using Vega as zero-point, reference cannot be found at this time
     fluxes = 10**((mags + 48.60)/(-2.5))
     return fluxes
 

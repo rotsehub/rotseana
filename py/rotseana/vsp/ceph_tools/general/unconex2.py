@@ -144,14 +144,26 @@ def print_lightcurve(lightcurve, xerror, final):
 
 def save_lightcurve(lightcurve, cwd, vra, vdec):
     os.chdir(cwd)
-    filename = f'lightcurve_ra{vra:.5f}_dec{vdec:.5f}.dat'
-    print(f"You can find a copy of the light curve named {filename} in the same directory as unconex2.py")
+    vra = str(vra)
+    vdec = str(vdec)
+    if vra.index('.') != 6:
+        vra, vdec = deci2sexa(vra, vdec)
+    vra = vra[0:4]
+    vdec = vdec[0:4]
+    filename = f'J{vra}+{vdec}_ulc.dat'
+    print(f"You can find a copy of the light curve named {filename} in {cwd}")
     np.savetxt(filename, lightcurve, fmt = '%.11f')
 
 def save_log(log_params, cwd, vra, vdec):
     os.chdir(cwd)
-    filename = f'log_ra{vra:.5f}_dec{vdec:.5f}.dat'
-    print(f"You can find a copy of the log file named {filename} in the same directory as unconex2.py")
+    vra = str(vra)
+    vdec = str(vdec)
+    if vra.index('.') != 6:
+        vra, vdec = deci2sexa(vra, vdec)
+    vra = vra[0:4]
+    vdec = vdec[0:4]
+    filename = f'J{vra}+{vdec}_log_ulc.dat'
+    print(f"You can find a copy of the log file named {filename} in {cwd}")
     open(f'{filename}', 'w').writelines('%s\n' % x for x in log_params)
 
 def getBinaryStr(bitSum):
@@ -172,13 +184,29 @@ def applyBitmask(lightCurve, bitmask):
                 flagged[8].append(x)
     return flagged
 
-def unconex(lightCurve, schedule, threshold, xerror):
+def unconex(lightCurve, schedule, threshold, xerror, removeObs):
+    preserved = [1 for x in lightCurve] # Array for manual preservation state of each observation
     confirmation = [[0, 0] for x in lightCurve] # Array for confirmation state of each observation
     consistence = [[0, 0] for x in lightCurve] # Array for consistence state of each observation
     filtLightCurve = [] # Array for filtered light curve
     graceTime = 40 # Grace time definition 
+    
+    if removeObs:
+        for x in range(len(preserved) - 1):
+            if x == 0:
+                preserved[x] = 0
+                preserved[x+1] = 0
+            elif np.floor(lightCurve[x][0]) != np.floor(lightCurve[x + 1][0]):
+                preserved[x] = 0
+                preserved[x - 1] = 0
+            elif np.floor(lightCurve[x][0]) != np.floor(lightCurve[x - 1][0]): 
+                preserved[x] = 0
+                preserved[x + 1] = 0
+            elif x == len(preserved) - 2:
+                preserved[x] = 0
+                preserved[x + 1] = 0
     for x in range(len(confirmation) - 1): # Loop through each entry in confirmation
-        if abs(lightCurve[x][0] - lightCurve[x + 1][0]) <= (lightCurve[x][3] + graceTime) / 86400:
+        if abs(lightCurve[x][0] - lightCurve[x + 1][0]) <= (lightCurve[x][3] + graceTime) / 86400 and preserved[x] == 1 and preserved[x + 1] == 1:
             confirmation[x][1] += 1
             confirmation[x + 1][0] += 1
     for x in range(len(consistence) - 1):
@@ -188,14 +216,23 @@ def unconex(lightCurve, schedule, threshold, xerror):
                 consistence[x + 1][0] += 1
         else: 
             pass
-    unconfirmed = [lightCurve[x] for x in range(len(lightCurve)) if confirmation[x][0] != 1 and confirmation[x][1] != 1]
-    inconsistent = [lightCurve[x] for x in range(len(lightCurve)) if consistence[x][0] != 1 and consistence[x][1] != 1 and lightCurve[x] not in unconfirmed]
-    print(f'{len(lightCurve) - len(unconfirmed)} observations were confirmed')
-    print(f'{len(lightCurve) - len(unconfirmed) - len(inconsistent)} observations are consistent')
+    unpreserved = [lightCurve[x] for x in range(len(lightCurve)) if preserved[x] != 1]
+    unconfirmed = [lightCurve[x] for x in range(len(lightCurve)) if confirmation[x][0] != 1 and confirmation[x][1] != 1 and lightCurve[x] not in unpreserved]
+    inconsistent = [lightCurve[x] for x in range(len(lightCurve)) if consistence[x][0] != 1 and consistence[x][1] != 1 and lightCurve[x] not in unconfirmed and lightCurve[x] not in unpreserved]
+    print(f'{len(lightCurve) - len(unpreserved)} observations were preserved')
+    print(f'{len(lightCurve) - len(unpreserved) - len(unconfirmed)} observations were confirmed')
+    print(f'{len(lightCurve) - len(unpreserved) - len(unconfirmed) - len(inconsistent)} observations are consistent')
     averaged = []
     i = 0
     while i in range(len(lightCurve)):
         if i == len(lightCurve) - 1:
+            if consistence[i][0] == 1 and consistence[i - 1][1] == 1:
+                point = [lightCurve[i][0] + lightCurve[i][3] / 86400 / 2, lightCurve[i][1], lightCurve[i][2]]
+                if xerror:
+                    point.append(lightCurve[i][3] / 86400 / 2)
+                filtLightCurve.append(point)
+            i += 1
+        elif np.floor(lightCurve[x][0]) < np.floor(lightCurve[x + 1][0]):
             if consistence[i][0] == 1 and consistence[i - 1][1] == 1:
                 point = [lightCurve[i][0] + lightCurve[i][3] / 86400 / 2, lightCurve[i][1], lightCurve[i][2]]
                 if xerror:
@@ -226,15 +263,16 @@ def unconex(lightCurve, schedule, threshold, xerror):
             i += 1
     print(f'{len(averaged) * 2} observations were averaged')
     print(f'{len(filtLightCurve) - len(averaged)} consistent but unpaired observations were retained')
-    return filtLightCurve, averaged, unconfirmed, inconsistent
+    return filtLightCurve, averaged, unpreserved, unconfirmed, inconsistent
 
-def getPlots(lightCurve, filtLightCurve, flagged, averaged, unconfirmed, inconsistent, rightAscension, declination, bitmask, minUncertainty, xerror):
+def getPlots(lightCurve, filtLightCurve, flagged, averaged, unpreserved, unconfirmed, inconsistent, rightAscension, declination, bitmask, minUncertainty, xerror):
     lightCurve = [[x[0], x[1], x[2]] for x in lightCurve]
+    unpreserved = [[x[0], x[1], x[2]] for x in unpreserved]
     unconfirmed = [[x[0], x[1], x[2]] for x in unconfirmed]
     inconsistent = [[x[0], x[1], x[2]] for x in inconsistent]
     meanErr = np.mean([x[2] for x in lightCurve])
     filtMeanErr = np.mean([x[2] for x in filtLightCurve])
-    maskedObs = [x for x in lightCurve if x not in unconfirmed and x not in inconsistent]
+    maskedObs = [x for x in lightCurve if x not in unpreserved and x not in unconfirmed and x not in inconsistent]
     averagedObs = [x[0] for x in averaged]
     unpairedObs = [x for x in filtLightCurve if x not in averagedObs]
     #if xerror:
@@ -245,6 +283,7 @@ def getPlots(lightCurve, filtLightCurve, flagged, averaged, unconfirmed, inconsi
     ax1, ax2 = axs
     ax1.errorbar([x[0] for x in maskedObs], [x[1] for x in maskedObs], [x[2] for x in maskedObs], fmt = 'o', color = 'tab:blue', label = f'Masked Observations ({len(maskedObs)})')
     ax1.errorbar([x[0] for x in flagged[8]], [x[1] for x in flagged[8]], [x[2] for x in flagged[8]], fmt = '+', color = 'tab:orange', label = f'Flagged Observations ({len(flagged[8])})')
+    ax1.errorbar([x[0] for x in unpreserved], [x[1] for x in unpreserved], [x[2] for x in unpreserved], fmt = '+', color = 'tab:pink', label = f'Unpreserved Observations ({len(unpreserved)})')
     ax1.errorbar([x[0] for x in unconfirmed], [x[1] for x in unconfirmed], [x[2] for x in unconfirmed], fmt = '+', color = 'tab:olive', label = f'Unconfirmed Observations ({len(unconfirmed)})')
     ax1.errorbar([x[0] for x in inconsistent], [x[1] for x in inconsistent], [x[2] for x in inconsistent], fmt = '+', color = 'tab:red', label = f'Inconsistent Observations ({len(inconsistent)})')
     ax1.set_title(f'Target: {rightAscension:.7f} {declination:.7f}\nBitmask = {bitmask}, $\sigma_{{min}} = {minUncertainty}$\nUnfiltered Light Curve\n$\\bar{{\sigma}} = {meanErr:.6f}$')
@@ -266,7 +305,7 @@ def getPlots(lightCurve, filtLightCurve, flagged, averaged, unconfirmed, inconsi
     ax2.legend()
     return fig
 
-def getTestPlots(lightCurve, filtLightCurve, averaged, flagged, unconfirmed, inconsistent, rightAscension, declination):
+def getTestPlots(lightCurve, filtLightCurve, averaged, flagged, unpreserved, unconfirmed, inconsistent, rightAscension, declination):
     fig, axs = plt.subplots(1)
     lightCurve = [[x[0], x[1], x[2]] for x in lightCurve]
     pairedObs = [[x[1], x[2]] for x in averaged]
@@ -281,6 +320,7 @@ def getTestPlots(lightCurve, filtLightCurve, averaged, flagged, unconfirmed, inc
     axs.errorbar([x[0] for x in pairedObs], [x[1] for x in pairedObs], [x[2] for x in pairedObs], fmt = 'o', color = 'tab:blue', label = f'Paired Observations ({len(pairedObs)})')
     axs.errorbar([x[0] for x in unpairedObs], [x[1] for x in unpairedObs], [x[2] for x in unpairedObs], fmt = 'o', color = 'tab:green', label = f'Unpaired Observations ({len(unpairedObs)})')
     axs.errorbar([x[0] for x in avgObs], [x[1] for x in avgObs], [x[2] for x in avgObs], fmt = 'o', color = 'tab:purple', label = f'Averaged Observations ({len(averaged)})')
+    axs.errorbar([x[0] for x in unpreserved], [x[1] for x in unpreserved], [x[2] for x in unpreserved], fmt = '+', color = 'tab:pink', label = f'Unpreserved Observations ({len(unpreserved)})')
     axs.errorbar([x[0] for x in unconfirmed], [x[1] for x in unconfirmed], [x[2] for x in unconfirmed], fmt = '+', color = 'tab:olive', label = f'Unconfirmed Observations ({len(unconfirmed)})')
     axs.errorbar([x[0] for x in inconsistent], [x[1] for x in inconsistent], [x[2] for x in inconsistent], fmt = '+', color = 'tab:red', label = f'Inconsistent Observations ({len(inconsistent)})')
     axs.set(xlabel = 'Time (MJD)')
@@ -291,7 +331,13 @@ def getTestPlots(lightCurve, filtLightCurve, averaged, flagged, unconfirmed, inc
 
 ## Write # of flags and the end of file
 def writeFlags(binaryBitmask, flagged, vra, vdec, cwd, totalObs):
-    filename = f'lightcurve_ra{vra:.5f}_dec{vdec:.5f}.dat' ## put the file name in a variable
+    vra1 = str(vra)
+    vdec1 = str(vdec)
+    if vra1.index('.') != 6:
+        vra1, vdec1 = deci2sexa(vra, vdec)
+    vra1 = vra1[0:4]
+    vdec1 = vdec1[0:4]
+    filename = f'J{vra1}+{vdec1}_ulc.dat' ## put the file name in a variable
     os.chdir(cwd) ## get to the right directory 
     openedFile = open(f'{filename}', 'a') ## open the file to edit it
     if binaryBitmask[7] == '1': ## if user wants to use this flag (selcted this bitmask as an arugment)
@@ -333,7 +379,53 @@ def sexa2deci(rightAscension, declination):
     declination = float(''.join(declination[:2])) + float(''.join(declination[2:4])) / 60 + float(''.join(declination[4:])) / 3600
     return rightAscension, declination
 
-def main(fileDir, schedule, rightAscension, declination, threshold, bitmask, minUncertainty, xerror, plot, picklePlot, save, verbose, log, night, dev):
+def deci2sexa(rightAscension, declination):
+    ra_hh = (float(rightAscension) / 15)
+    if ra_hh < 10:
+        ra_hh = str(ra_hh)
+        ra_hh = '0' + ra_hh
+    else:
+        ra_hh = str(ra_hh)
+    ra_hh_dec = ra_hh.index('.')
+    ra_mm = float(ra_hh[ra_hh_dec:]) * 60
+    if ra_mm < 10:
+        ra_mm = str(ra_mm)
+        ra_mm = '0' + ra_mm
+    else:
+        ra_mm = str(ra_mm)
+    ra_mm_dec = ra_mm.index('.')
+    ra_ss = float(ra_mm[ra_mm_dec:]) * 60
+    if ra_ss < 10:
+        ra_ss = str(ra_ss)
+        ra_ss = '0' + ra_ss
+    else:
+        ra_ss = str(ra_ss)
+    rightAscension = ra_hh[0:ra_hh_dec] + ra_mm[0:ra_mm_dec] + ra_ss
+    
+    decl_deg = (float(declination))
+    if decl_deg < 10:
+        decl_deg = str(decl_deg)
+        decl_deg = '0' + str(decl_deg)
+    else:
+        decl_deg = str(decl_deg)
+    decl_deg_dec = decl_deg.index('.')
+    decl_mm = float(decl_deg[decl_deg_dec:]) * 60
+    if decl_mm < 10:
+        decl_mm = str(decl_mm)
+        decl_mm = '0' + decl_mm
+    else:
+        decl_mm = str(decl_mm)
+    decl_mm_dec = decl_mm.index('.')
+    decl_ss = float(decl_mm[decl_mm_dec:]) * 60
+    if decl_ss < 10:
+        decl_ss = str(decl_ss)
+        decl_ss = '0' + decl_ss
+    else:
+        decl_ss = str(decl_ss)
+    declination = decl_deg[0:decl_deg_dec] + decl_mm[0:decl_mm_dec] + decl_ss
+    return rightAscension, declination
+
+def main(fileDir, schedule, rightAscension, declination, threshold, bitmask, minUncertainty, xerror, plot, picklePlot, save, verbose, log, night, dev, removeObs):
     if rightAscension[6] == '.':
         rightAscension, declination = sexa2deci(rightAscension, declination)
     else:
@@ -376,25 +468,32 @@ def main(fileDir, schedule, rightAscension, declination, threshold, bitmask, min
     for x in lightCurve:
         if x[2] < minUncertainty:
             x[2] = minUncertainty
-    filtLightCurve, averaged, unconfirmed, inconsistent = unconex(lightCurve, schedule, threshold, xerror)
+    filtLightCurve, averaged, unpreserved, unconfirmed, inconsistent = unconex(lightCurve, schedule, threshold, xerror, removeObs)
     filtLightCurve.sort()
     averaged.sort()
+    unpreserved.sort()
     unconfirmed.sort()
     inconsistent.sort()
     if verbose:
         print_lightcurve(filtLightCurve, xerror, True)
     if plot or picklePlot:
         os.chdir(cwd)
-        fig = getPlots(lightCurve, filtLightCurve, flagged, averaged, unconfirmed, inconsistent, rightAscension, declination, bitmask, minUncertainty, xerror)
+        fig = getPlots(lightCurve, filtLightCurve, flagged, averaged, unpreserved, unconfirmed, inconsistent, rightAscension, declination, bitmask, minUncertainty, xerror)
         if picklePlot:
-            filename = f'fig_ra{rightAscension:.5f}+dec{declination:.5f}.pkl'
+            vra2 = str(rightAscension)
+            vdec2 = str(declination)
+            if vra2.index('.') != 6:
+                vra2, vdec2 = deci2sexa(vra2, vdec2)
+            vra2 = vra2[0:4]
+            vdec2 = vdec2[0:4]
+            filename = f'J{vra2}+{vdec2}_ulc.pkl'
             pickle.dump(fig, open(f'{filename}', 'wb'))
-            print(f"A pickled plot of the light curve named {filename} has been saved in the same directory as unconex2.py")
+            print(f"A pickled plot of the light curve named {filename} has been saved in {cwd}")
     if save:
         save_lightcurve(filtLightCurve, cwd, rightAscension, declination)
     if log:
         logParams = [f'Extracted observations: {len(extractedObs)}', f'Physical observations: {len(lightCurve) + len(flagged[8])}', f'Masked observations: {len(lightCurve)}', 
-        f'Flagged observations: {len(flagged[8])}', f'Confirmed observations: {len(lightCurve) - len(unconfirmed)}', f'Constistent observations: {len(lightCurve) - len(unconfirmed) - len(inconsistent)}', 
+        f'Flagged observations: {len(flagged[8])}', f'Preserved observations: {len(lightCurve) - len(unpreserved)}', f'Confirmed observations: {len(lightCurve) - len(unpreserved) - len(unconfirmed)}', f'Constistent observations: {len(lightCurve) - len(unpreserved) - len(unconfirmed) - len(inconsistent)}', 
         f'Averaged observations: {len(averaged) * 2}', f'Unpaired observations: {len(filtLightCurve) - len(averaged)}', f'Filtered observations: {len(filtLightCurve)}']
         save_log(logParams, cwd, rightAscension, declination)
     for x in averaged:
@@ -408,7 +507,7 @@ def main(fileDir, schedule, rightAscension, declination, threshold, bitmask, min
         np.savetxt('avgobs_ra'+str(rightAscension)+'_dec'+str(declination)+'.dat', avgObs, fmt = '%.11f')
         np.savetxt('priorobs_ra'+str(rightAscension)+'_dec'+str(declination)+'.dat', priorObs, fmt = '%.11f')
         np.savetxt('subobs_ra'+str(rightAscension)+'_dec'+str(declination)+'.dat', subsequentObs, fmt = '%.11f')
-        getTestPlots(lightCurve, filtLightCurve, averaged, flagged, unconfirmed, inconsistent, rightAscension, declination)
+        getTestPlots(lightCurve, filtLightCurve, averaged, flagged, unpreserved, unconfirmed, inconsistent, rightAscension, declination)
     ## print numebr of flagged observations at the end of file
     writeFlags(binaryBitmask,flagged,rightAscension,declination,cwd,len(lightCurve))
     if plot:
@@ -430,6 +529,7 @@ parser.add_argument("--verbose", "-v", default = False, help = 'Print target\'s 
 parser.add_argument("--log", "-l", default = False, help = 'Save processing metrics to log file (True to enable)')
 parser.add_argument("--night", "-n", type = int, default = None, help = 'Only process the target\'s light curve for a specifc night')
 parser.add_argument("--dev", "-d", default = False, help = 'Enable developer mode to output additional data and plots')
+parser.add_argument("--removeObs", "-r", default = False, help = 'Remove the first two and last two observations in each nightly plot')
 args = parser.parse_args()
 
 fileDir = args.fileDir
@@ -459,4 +559,5 @@ if night != None and schedule =='NSVS':
     print('ArgumentError: Can only plot/save indvidual nights for ROTSE-I and III data')
     night = None
 dev = evaluateBooleanArg(args.dev)
-main(fileDir, schedule, ra, dec, threshold, bitmask, minUncertainty, xerror, plot, picklePlot, save, verbose, log, night, dev)
+removeObs = evaluateBooleanArg(args.removeObs)
+main(fileDir, schedule, ra, dec, threshold, bitmask, minUncertainty, xerror, plot, picklePlot, save, verbose, log, night, dev, removeObs)

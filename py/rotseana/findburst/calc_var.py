@@ -78,7 +78,8 @@ def calc_var(match, nvar, totobs, goodobj, mindelta, minsig, emask=None, rmask=N
             var[k].obs[i].dis = dis[i]
             var[k].obs[i].posangle = posangle[i]
         var[k].pos_sdv = (np.std(dra)+np.std(ddec)) / 2.0
-        var[k].posrange = (np.max(dra)-np.min(dra)) > (np.max(ddec)-np.min(ddec))
+        #var[k].posrange = (np.max(dra)-np.min(dra)) > (np.max(ddec)-np.min(ddec))
+        var[k].posrange = max(np.max(dra)-np.min(dra), np.max(ddec)-np.min(ddec))
 
         # Obtain list of good observations and use to calculate lightcurve information
 
@@ -98,7 +99,7 @@ def calc_var(match, nvar, totobs, goodobj, mindelta, minsig, emask=None, rmask=N
             sum_merr_msys = match_merr[ptr, gdobs]**2 + (match_msys[ptr, gdobs]/200.0)**2.0
             err = np.sqrt(sum_merr_msys)
             for i in range(len(gdobs)):
-                var[k].obs[gdobs[i]].err = err[i]**2.0
+                var[k].obs[gdobs[i]].err = err[i]
             kth_var = var[k]
             obs = np.rec.array(var[k].obs[gdobs], dtype=obs_dt)
             errobs = [i.err for i in obs]

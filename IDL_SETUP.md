@@ -2,7 +2,7 @@
 
 This repository contains the ROTSE IDL code under:
 
-    umrotse_idl/
+    idl/umrotse/
 
 The `setup_idl_paths.csh` script configures IDL so that routines from
 this GitHub checkout are used before older ROTSE installations that may
@@ -23,12 +23,12 @@ The default IDLAstro installation is:
 
     /home/smurotse/products/IDLAstro
 
-The ROTSE routines are automatically taken from the `umrotse_idl`
+The ROTSE routines are automatically taken from the `idl/umrotse`
 directory in the downloaded GitHub repository.
 
 For example, `find_burst.pro` will be loaded from:
 
-    <path-to-rotseana>/umrotse_idl/findburst/find_burst.pro
+    <path-to-rotseana>/idl/umrotse/findburst/find_burst.pro
 
 instead of an older local copy.
 
@@ -55,7 +55,7 @@ Inside IDL:
 
 The output should point to:
 
-    .../rotseana/umrotse_idl/findburst/find_burst.pro
+    .../rotseana/idl/umrotse/findburst/find_burst.pro
 
 ## 6. Verify IDLAstro
 
@@ -71,7 +71,7 @@ On the SMU ROTSE system, the output should point to:
 ## Notes
 
 - Older copies of `find_burst.pro` do not need to be deleted.
-- The GitHub `umrotse_idl` tree is placed before pre-existing ROTSE
+- The GitHub `idl/umrotse` tree is placed before pre-existing ROTSE
   libraries in the IDL search path.
 - Run `source setup_idl_paths.csh` in each new terminal session before
   starting IDL.

@@ -61,10 +61,10 @@ endif
 # Check required directories
 # ------------------------------------------------------------
 
-if (! -d "$ROTSEANA_HOME/umrotse_idl") then
+if (! -d "$ROTSEANA_HOME/idl/umrotse") then
     echo ""
     echo "ERROR: Cannot find the GitHub ROTSE IDL directory:"
-    echo "  $ROTSEANA_HOME/umrotse_idl"
+    echo "  $ROTSEANA_HOME/idl/umrotse"
     echo ""
     return
 endif
@@ -98,12 +98,12 @@ endif
 #
 # IDLAstro is searched first.
 #
-# The umrotse_idl directory from THIS GitHub checkout is placed
+# The idl/umrotse directory from THIS GitHub checkout is placed
 # before any pre-existing ROTSE installation. Therefore routines
 # such as find_burst.pro are taken from the downloaded repository.
 # ------------------------------------------------------------
 
-setenv IDL_PATH "+${IDLASTRO_HOME}:+${ROTSEANA_HOME}/umrotse_idl:${old_idl_path}"
+setenv IDL_PATH "+${IDLASTRO_HOME}:+${ROTSEANA_HOME}/idl/umrotse:${old_idl_path}"
 
 
 # ------------------------------------------------------------
@@ -115,7 +115,7 @@ echo "ROTSE IDL environment configured."
 echo ""
 
 echo "GitHub ROTSE IDL:"
-echo "  $ROTSEANA_HOME/umrotse_idl"
+echo "  $ROTSEANA_HOME/idl/umrotse"
 
 echo ""
 echo "IDLAstro:"
